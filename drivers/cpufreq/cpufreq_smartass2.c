@@ -49,7 +49,7 @@ static int boost_counter = 0;
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define DEFAULT_IDEAL_FREQ 1300000 // this seems to be the lowest fq at which everything is smooth enough
+#define DEFAULT_IDEAL_FREQ 910000 // this seems to be the lowest fq at which everything is smooth enough
 static unsigned int ideal_freq;
 
 /*
@@ -57,7 +57,7 @@ static unsigned int ideal_freq;
  * Zero disables and causes to always jump straight to max frequency.
  * When below the ideal freqeuncy we always ramp up to the ideal freq.
  */
-#define DEFAULT_RAMP_UP_STEP 400000
+#define DEFAULT_RAMP_UP_STEP 51000
 static unsigned int ramp_up_step;
 
 /*
@@ -71,7 +71,7 @@ static unsigned int ramp_down_step;
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 95
+#define DEFAULT_MAX_CPU_LOAD 96
 static unsigned int max_cpu_load;
 
 /*
