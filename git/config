@@ -1,0 +1,26 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[merge]
+	tool = meld
+[remote "marmite"]
+	url = ssh://git@github.com/bedalus/marmite.git
+	fetch = +refs/heads/*:refs/remotes/marmite/*
+[remote "common"]
+	url = git://github.com/android/kernel_common.git
+	fetch = +refs/heads/android-3.0:refs/remotes/common/android-3.0
+[remote "IDLE2"]
+	url = git://github.com/thalamus/android-kernel.git
+	fetch = +refs/heads/IDLE2-v0.3xx:refs/remotes/IDLE2/IDLE2-v0.3xx
+[remote "linux-3.0.y"]
+	url = git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+	fetch = +refs/heads/linux-3.0.y:refs/remotes/linux-3.0.y/linux-3.0.y
+
+[remote "android-3.4"]
+	url = git://github.com/android/kernel_common.git
+	fetch = +refs/heads/android-3.4:refs/remotes/common/android-3.4
+[remote "samjb"]
+	url = https://android.googlesource.com/kernel/samsung/
+	fetch = +refs/heads/android-samsung-3.0-jb-mr0:refs/remotes/samjb/android-samsung-3.0-jb-mr0
