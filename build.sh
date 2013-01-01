@@ -13,9 +13,5 @@
     cd /home/dave/android/kernelinjector.oxp_stock/
     rm /home/dave/android/kernelinjector.oxp_stock/bootimg.out/boot.img
     sh /home/dave/android/kernelinjector.oxp_stock/compile
-
-    cp /home/dave/android/kernelinjector.oxp_stock/bootimg.out/boot.img /media/74C420EEC420B470/Documents\ and\ Settings/Administrator/
-    ls -l /media/74C420EEC420B470/Documents\ and\ Settings/Administrator/
-
     echo -e "Check zImage timestamp is correct\n"
 ##
