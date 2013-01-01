@@ -8,6 +8,15 @@
 
     cp /home/dave/android/hox+/arch/arm/boot/zImage /home/dave/android/kernelinjector.oxp_stock/zImage.new/
     cp /home/dave/android/hox+/drivers/scsi/scsi_wait_scan.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+
+    cp /home/dave/android/hox+/arch/arm/mach-tegra/baseband-xmm-power2.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+
+    cp /home/dave/android/hox+/drivers/net/usb/raw_ip_net.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+
+    cp /home/dave/android/hox+/drivers/usb/class/cdc-acm.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+
+    cp /home/dave/android/hox+/drivers/usb/serial/baseband_usb_chr.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+
     ls -l /home/dave/android/hox+/arch/arm/boot/zImage 
 
     cd /home/dave/android/kernelinjector.oxp_stock/
