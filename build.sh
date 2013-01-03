@@ -6,21 +6,17 @@
     make -j3 
 ## > /home/dave/android/history.txt
 
-    cp /home/dave/android/hox+/arch/arm/boot/zImage /home/dave/android/kernelinjector.oxp_stock/zImage.new/
-    cp /home/dave/android/hox+/drivers/scsi/scsi_wait_scan.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+    cd /media/49eafd06-4527-4bb1-8fe0-88a8d9466036/home/dave/android/hox+/
 
-    cp /home/dave/android/hox+/arch/arm/mach-tegra/baseband-xmm-power2.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+    cp ./arch/arm/boot/zImage ../kernelinjector.oxp_stock/zImage.new/
+    
+    find ./drivers -type f -name '*.ko' -exec cp -f {} ../kernelinjector.oxp_stock/structure.new/modules \;
+    find ./arch -type f -name '*.ko' -exec cp -f {} ../kernelinjector.oxp_stock/structure.new/modules \;
 
-    cp /home/dave/android/hox+/drivers/net/usb/raw_ip_net.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+    ls -l ./arch/arm/boot/zImage 
 
-    cp /home/dave/android/hox+/drivers/usb/class/cdc-acm.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
-
-    cp /home/dave/android/hox+/drivers/usb/serial/baseband_usb_chr.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
-
-    ls -l /home/dave/android/hox+/arch/arm/boot/zImage 
-
-    cd /home/dave/android/kernelinjector.oxp_stock/
-    rm /home/dave/android/kernelinjector.oxp_stock/bootimg.out/boot.img
-    sh /home/dave/android/kernelinjector.oxp_stock/compile
+    cd ../kernelinjector.oxp_stock/
+    rm ./bootimg.out/boot.img
+    sh ./compile
     echo -e "Check zImage timestamp is correct\n"
 ##
