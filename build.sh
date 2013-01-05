@@ -18,5 +18,7 @@
     cd ../kernelinjector.oxp_stock/
     rm ./bootimg.out/boot.img
     sh ./compile
+    cp ./bootimg.out/boot.img /mnt/windows-share/boot$(date +%Y%m%d%H%M).img
+
     echo -e "Check zImage timestamp is correct\n"
 ##
