@@ -76,8 +76,8 @@ unsigned int tegra_throttle_governor_speed(unsigned int requested_speed)
 		return requested_speed;
 
     /* ignore thermal throttle limitation */
-    if (unlikely(no_thermal_throttle_limit))
-		return requested_speed;
+//    if (unlikely(no_thermal_throttle_limit))
+//		return requested_speed;
 
 	cpu_freq_table = table_data->freq_table;
 	lowest_speed = cpu_freq_table[table_data->throttle_lowest_index].frequency;
