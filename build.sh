@@ -6,8 +6,6 @@
     make -j3 
 ## > /home/dave/android/history.txt
 
-    cd /media/49eafd06-4527-4bb1-8fe0-88a8d9466036/home/dave/android/hox+/
-
     cp ./arch/arm/boot/zImage ../kernelinjector.oxp_stock/zImage.new/
     
     find ./drivers -type f -name '*.ko' -exec cp -f {} ../kernelinjector.oxp_stock/structure.new/modules \;
@@ -16,9 +14,9 @@
     ls -l ./arch/arm/boot/zImage 
 
     cd ../kernelinjector.oxp_stock/
-    rm ./bootimg.out/boot.img
+
     sh ./compile
-    cp ./bootimg.out/boot.img /mnt/windows-share/boot$(date +%Y%m%d%H%M).img
+    mv ./bootimg.out/boot.img ./bootimg.out/boot$(date +%Y%m%d%H%M).img
 
     echo -e "Check zImage timestamp is correct\n"
 ##
