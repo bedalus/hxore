@@ -68,9 +68,9 @@
  * DISABLE is the load at which a CPU is disabled
  * These two are scaled based on num_online_cpus()
  */
-#define ENABLE_ALL_LOAD_THRESHOLD	(125 * CPUS_AVAILABLE)
-#define ENABLE_LOAD_THRESHOLD		225
-#define DISABLE_LOAD_THRESHOLD		60
+#define ENABLE_ALL_LOAD_THRESHOLD	(75 * CPUS_AVAILABLE)
+#define ENABLE_LOAD_THRESHOLD		100
+#define DISABLE_LOAD_THRESHOLD		30
 
 /* Control flags */
 unsigned char flags;
@@ -223,7 +223,7 @@ static void hotplug_offline_all_work_fn(struct work_struct *work)
 	int cpu;
 	for_each_possible_cpu(cpu) {
 		if (likely(cpu_online(cpu) && (cpu))) {
-			cpu_down(cpu);
+		//	cpu_down(cpu); bedalus prevent cpus going down
 			pr_info("auto_hotplug: CPU%d down.\n", cpu);
 		}
 	}
@@ -238,7 +238,7 @@ static void hotplug_online_single_work_fn(struct work_struct *work)
 			if (!cpu_online(cpu)) {
 				cpu_up(cpu);
 				pr_info("auto_hotplug: CPU%d up.\n", cpu);
-				break;
+		//		break; bedalus: no early break, all cpus will go up
 			}
 		}
 	}
@@ -250,7 +250,7 @@ static void hotplug_offline_work_fn(struct work_struct *work)
 	int cpu;
 	for_each_online_cpu(cpu) {
 		if (cpu) {
-			cpu_down(cpu);
+		//	cpu_down(cpu);
 			pr_info("auto_hotplug: CPU%d down.\n", cpu);
 			break;
 		}
