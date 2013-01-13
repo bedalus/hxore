@@ -1307,38 +1307,14 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	struct mass_storage_function_config *config;
 	struct fsg_common *common;
 	int err;
-	struct android_dev *dev = _android_dev;
-	int i;
 
 	config = kzalloc(sizeof(struct mass_storage_function_config),
 								GFP_KERNEL);
 	if (!config)
 		return -ENOMEM;
 
-
-	if (dev->pdata->nluns) {
-		config->fsg.nluns = dev->pdata->nluns;
-		if (config->fsg.nluns > FSG_MAX_LUNS)
-			config->fsg.nluns = FSG_MAX_LUNS;
-		for (i = 0; i < config->fsg.nluns; i++) {
-			if (dev->pdata->cdrom_lun & (1 << i)) {
-				config->fsg.luns[i].cdrom = 1;
-				config->fsg.luns[i].removable = 1;
-				config->fsg.luns[i].ro = 1;
-			} else {
-				config->fsg.luns[i].cdrom = 0;
-				config->fsg.luns[i].removable = 1;
-				config->fsg.luns[i].ro = 0;
-			}
-		}
-	} else {
-		/* default value */
-		config->fsg.nluns = 1;
-		config->fsg.luns[0].removable = 1;
-	}
-
-	config->fsg.vendor_name = dev->pdata->manufacturer_name;
-	config->fsg.product_name= dev->pdata->product_name;
+	config->fsg.nluns = 1;
+	config->fsg.luns[0].removable = 1;
 
 	common = fsg_common_init(NULL, cdev, &config->fsg);
 	if (IS_ERR(common)) {
@@ -1346,15 +1322,12 @@ static int mass_storage_function_init(struct android_usb_function *f,
 		return PTR_ERR(common);
 	}
 
-	for (i = 0; i < config->fsg.nluns; i++) {
-		err = sysfs_create_link(&f->dev->kobj,
-					&common->luns[i].dev.kobj,
-					common->luns[i].dev.kobj.name);
-		if (err) {
-			fsg_common_release(&common->ref);
-			kfree(config);
-			return err;
-		}
+	err = sysfs_create_link(&f->dev->kobj,
+				&common->luns[0].dev.kobj,
+				"lun");
+	if (err) {
+		kfree(config);
+		return err;
 	}
 
 	config->common = common;
@@ -1380,7 +1353,7 @@ static ssize_t mass_storage_inquiry_show(struct device *dev,
 {
 	struct android_usb_function *f = dev_get_drvdata(dev);
 	struct mass_storage_function_config *config = f->config;
-	return snprintf(buf, PAGE_SIZE, "%s\n", config->common->inquiry_string);
+	return sprintf(buf, "%s\n", config->common->inquiry_string);
 }
 
 static ssize_t mass_storage_inquiry_store(struct device *dev,
@@ -1390,7 +1363,7 @@ static ssize_t mass_storage_inquiry_store(struct device *dev,
 	struct mass_storage_function_config *config = f->config;
 	if (size >= sizeof(config->common->inquiry_string))
 		return -EINVAL;
-	if (sscanf(buf, "%28s", config->common->inquiry_string) != 1)
+	if (sscanf(buf, "%s", config->common->inquiry_string) != 1)
 		return -EINVAL;
 	return size;
 }
@@ -1672,7 +1645,7 @@ static int android_init_functions(struct android_usb_function **functions,
 	struct device_attribute **attrs;
 	struct device_attribute *attr;
 	int err = 0;
-	int index = 1; /* index 0 is for android0 device */
+	int index = 0; /* index 0 is for android0 device */
 
 	for (; (f = *functions++); index++) {
 		f->dev_name = kasprintf(GFP_KERNEL, "f_%s", f->name);
