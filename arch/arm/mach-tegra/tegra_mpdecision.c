@@ -466,7 +466,7 @@ static void tegra_mpdec_work_thread(struct work_struct *work)
                 lpup_req = 0;
                 lpdown_req = 0;
 		cpu = get_slowest_cpu();
-                if (cpu < nr_cpu_ids) { /*
+                if ((cpu < nr_cpu_ids) && (num_online_cpus() > 2)) {
                         if ((per_cpu(tegra_mpdec_cpudata, cpu).online == true) && (cpu_online(cpu))) {
                                 cpu_down(cpu);
                                 per_cpu(tegra_mpdec_cpudata, cpu).online = false;
@@ -474,7 +474,7 @@ static void tegra_mpdec_work_thread(struct work_struct *work)
                                 pr_info(MPDEC_TAG"CPU[%d] on->off | Mask=[%d.%d%d%d%d] | time on: %llu\n",
                                         cpu, is_lp_cluster(), ((is_lp_cluster() == 1) ? 0 : cpu_online(0)),
                                         cpu_online(1), cpu_online(2), cpu_online(3), on_time);
-                        } else */ if (per_cpu(tegra_mpdec_cpudata, cpu).online != cpu_online(cpu)) {
+                        } else if (per_cpu(tegra_mpdec_cpudata, cpu).online != cpu_online(cpu)) {
                                 pr_info(MPDEC_TAG"CPU[%d] was controlled outside of mpdecision! | pausing [%d]ms\n",
                                         cpu, tegra_mpdec_tuners_ins.pause);
                                 msleep(tegra_mpdec_tuners_ins.pause);
