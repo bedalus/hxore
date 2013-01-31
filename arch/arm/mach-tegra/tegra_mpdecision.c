@@ -115,7 +115,7 @@ static struct tegra_mpdec_tuners {
         .lp_cpu_up_hysteresis = TEGRA_MPDEC_LPCPU_UP_HYS,
         .lp_cpu_down_hysteresis = TEGRA_MPDEC_LPCPU_DOWN_HYS,
         .max_cpus = CONFIG_NR_CPUS,
-        .min_cpus = 1,
+        .min_cpus = 3,
 };
 
 static struct clk *cpu_clk;
@@ -467,14 +467,14 @@ static void tegra_mpdec_work_thread(struct work_struct *work)
                 lpdown_req = 0;
 		cpu = get_slowest_cpu();
                 if (cpu < nr_cpu_ids) {
-                    /*    if ((per_cpu(tegra_mpdec_cpudata, cpu).online == true) && (cpu_online(cpu))) {
+                        if ((per_cpu(tegra_mpdec_cpudata, cpu).online == true) && (cpu_online(cpu))) {
                                 cpu_down(cpu);
                                 per_cpu(tegra_mpdec_cpudata, cpu).online = false;
                                 on_time = ktime_to_ms(ktime_get()) - per_cpu(tegra_mpdec_cpudata, cpu).on_time;
                                 pr_info(MPDEC_TAG"CPU[%d] on->off | Mask=[%d.%d%d%d%d] | time on: %llu\n",
                                         cpu, is_lp_cluster(), ((is_lp_cluster() == 1) ? 0 : cpu_online(0)),
                                         cpu_online(1), cpu_online(2), cpu_online(3), on_time);
-                        } else */ if (per_cpu(tegra_mpdec_cpudata, cpu).online != cpu_online(cpu)) {
+                        } else if (per_cpu(tegra_mpdec_cpudata, cpu).online != cpu_online(cpu)) {
                                 pr_info(MPDEC_TAG"CPU[%d] was controlled outside of mpdecision! | pausing [%d]ms\n",
                                         cpu, tegra_mpdec_tuners_ins.pause);
                                 msleep(tegra_mpdec_tuners_ins.pause);

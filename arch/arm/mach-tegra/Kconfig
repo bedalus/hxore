@@ -23,7 +23,6 @@ config ARCH_TEGRA_2x_SOC
 	select ARCH_TEGRA_HAS_PCIE
 	select CPU_V7
 	select ARM_GIC
-	select ARM_SAVE_DEBUG_CONTEXT if PM_SLEEP
 	select ARCH_REQUIRE_GPIOLIB
 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
 	select USB_ULPI if USB_SUPPORT
@@ -51,7 +50,6 @@ config ARCH_TEGRA_3x_SOC
 	select ARCH_TEGRA_HAS_DUAL_CPU_CLUSTERS
 	select CPU_V7
 	select ARM_GIC
-	select ARM_SAVE_DEBUG_CONTEXT if PM_SLEEP
 	select GIC_SET_MULTIPLE_CPUS if SMP
 	select ARCH_REQUIRE_GPIOLIB
 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
@@ -211,13 +209,7 @@ config HTC_POWER_OFF
 
 config HTC_PROJECT
        bool "HTC Project"
-       select HTC_DEBUG_FILE_NODE
-       select WATCHDOG
-       select TEGRA_WATCHDOG
-       select TEGRA_WATCHDOG_ENABLE_ON_PROBE
-       select BOOTPARAM_SOFTLOCKUP_PANIC
        select ANDROID_RAM_CONSOLE_APPEND_PMIC_STATUS_BITS
-       select DEBUG_MUTEXES
        select HTC_POWER_OFF
        help
          HTC Project

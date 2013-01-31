@@ -199,25 +199,13 @@ void htc_pm_monitor_work(struct work_struct *work)
 	printk(KERN_INFO "[PM] hTC PM Statistic ");
 	printk(KERN_INFO "%02d-%02d %02d:%02d:%02d \n", tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-#if 0
-	htc_print_active_wake_locks(WAKE_LOCK_IDLE);
-	htc_print_active_wake_locks(WAKE_LOCK_SUSPEND);
-#endif
-
 	if (get_kernel_flag() & KERNEL_FLAG_PM_MONITOR)
 	{
 		htc_show_interrupts();
 
-#if 0
-		htc_xo_block_clks_count_show();
-		htc_xo_block_clks_count_clear();
-		htc_idle_stat_show(msm_htc_util_delay_time);
-		htc_idle_stat_clear();
-#endif
-
-		htc_timer_stats_onoff('0');
-		htc_timer_stats_show(300);/*Show timer events which greater than 0 every 10 sec*/
-		htc_timer_stats_onoff('1');
+	//	htc_timer_stats_onoff('0');
+	//	htc_timer_stats_show(300);/*Show timer events which greater than 0 every 10 sec*/
+	//	htc_timer_stats_onoff('1');
 		/*htc_print_active_perf_locks();*/
 
 		htc_kernel_top();
