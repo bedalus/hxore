@@ -101,6 +101,7 @@ static int tegra_fb_set_par(struct fb_info *info)
 {
 	struct tegra_fb_info *tegra_fb = info->par;
 	struct fb_var_screeninfo *var = &info->var;
+	struct tegra_dc *dc = tegra_fb->win->dc;
 
 	if (var->bits_per_pixel) {
 		/* we only support RGB ordering for now */
@@ -129,10 +130,13 @@ static int tegra_fb_set_par(struct fb_info *info)
 		default:
 			return -EINVAL;
 		}
-		info->fix.line_length = var->xres * var->bits_per_pixel / 8;
-		/* Pad the stride to 16-byte boundary. */
-		info->fix.line_length = round_up(info->fix.line_length,
+		/* if line_length unset, then pad the stride */
+		if (!info->fix.line_length) {
+			info->fix.line_length = var->xres * var->bits_per_pixel
+				/ 8;
+			info->fix.line_length = round_up(info->fix.line_length,
 						TEGRA_LINEAR_PITCH_ALIGNMENT);
+		}
 		tegra_fb->win->stride = info->fix.line_length;
 		tegra_fb->win->stride_uv = 0;
 		tegra_fb->win->phys_addr_u = 0;
@@ -141,16 +145,29 @@ static int tegra_fb_set_par(struct fb_info *info)
 
 	if (var->pixclock) {
 		bool stereo;
+		unsigned old_len = 0;
 		struct fb_videomode m;
+		struct fb_videomode *old_mode = NULL;
 
 		fb_var_to_videomode(&m, var);
+
+		/* Load framebuffer info with new mode details*/
+		old_mode = info->mode;
+		old_len  = info->fix.line_length;
 
 		info->mode = (struct fb_videomode *)
 			fb_find_nearest_mode(&m, &info->modelist);
 		if (!info->mode) {
 			dev_warn(&tegra_fb->ndev->dev, "can't match video mode\n");
+			info->mode = old_mode;
 			return -EINVAL;
 		}
+
+		/* Update fix line_length and window stride as per new mode */
+		info->fix.line_length = var->xres * var->bits_per_pixel / 8;
+		info->fix.line_length = round_up(info->fix.line_length,
+			TEGRA_LINEAR_PITCH_ALIGNMENT);
+		tegra_fb->win->stride = info->fix.line_length;
 
 		/*
 		 * only enable stereo if the mode supports it and
@@ -163,7 +180,21 @@ static int tegra_fb_set_par(struct fb_info *info)
 					FB_VMODE_STEREO_LEFT_RIGHT);
 #endif
 
-		tegra_dc_set_fb_mode(tegra_fb->win->dc, info->mode, stereo);
+		/* Configure DC with new mode */
+		if (tegra_dc_set_fb_mode(dc, info->mode, stereo)) {
+			/* Error while configuring DC, fallback to old mode */
+			dev_warn(&tegra_fb->ndev->dev, "can't configure dc with mode %ux%u\n",
+				info->mode->xres, info->mode->yres);
+			info->mode = old_mode;
+			info->fix.line_length = old_len;
+			tegra_fb->win->stride = old_len;
+			return -EINVAL;
+		}
+
+		/* Reflect mode chnage on DC HW */
+		if (dc->enabled)
+			tegra_dc_disable(dc);
+		tegra_dc_enable(dc);
 
 		tegra_fb->win->w.full = dfixed_const(info->mode->xres);
 		tegra_fb->win->h.full = dfixed_const(info->mode->yres);
@@ -629,8 +660,10 @@ struct tegra_fb_info *tegra_fb_register(struct nvhost_device *ndev,
 		tegra_fb->valid = true;
 	}
 
+	info->fix.line_length = fb_data->xres * fb_data->bits_per_pixel / 8;
+
 	stride = tegra_dc_get_stride(dc, 0);
-	if (!stride) /* default to pad the stride to 16-byte boundary. */
+	if (!stride) /* default to pad the stride */
 		stride = round_up(info->fix.line_length,
 			TEGRA_LINEAR_PITCH_ALIGNMENT);
 
@@ -647,7 +680,6 @@ struct tegra_fb_info *tegra_fb_register(struct nvhost_device *ndev,
 	info->fix.accel		= FB_ACCEL_NONE;
 	info->fix.smem_start	= fb_phys;
 	info->fix.smem_len	= fb_size;
-	info->fix.line_length = fb_data->xres * fb_data->bits_per_pixel / 8;
 	info->fix.line_length = stride;
 
 	info->var.xres			= fb_data->xres;
