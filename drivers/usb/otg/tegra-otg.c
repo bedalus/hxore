@@ -71,7 +71,7 @@ struct tegra_otg_data {
 	bool clk_enabled;
 	bool interrupt_mode;
 	bool builtin_host;
-	bool suspended;
+	bool suspended
 };
 
 static struct tegra_otg_data *tegra_clone;
@@ -88,14 +88,13 @@ enum {
 };
 
 #if defined(CONFIG_CABLE_DETECT_ACCESSORY)
-extern void cable_detection_queue_recovery_host_work(int time);
+extern void cable_detection_queue_recovery_host_work(time);
 #endif
 
 #if (defined(CONFIG_USB_OTG) && defined(CONFIG_USB_OTG_HOST))
-void usb_host_status_notifier_func(bool isEnable)
+void usb_host_status_notifier_func(int isEnable)
 {
 	unsigned long flags, val;
-	USBH_INFO("%s %d", __func__, isEnable);
 	if (isEnable) {
 		enable_interrupt(tegra_clone, false);
 		tegra_change_otg_state(tegra_clone, OTG_STATE_A_SUSPEND);
@@ -104,22 +103,7 @@ void usb_host_status_notifier_func(bool isEnable)
 	} else {
 		tegra_clone->interrupt_mode = true;
 		tegra_change_otg_state(tegra_clone, OTG_STATE_A_SUSPEND);
-		val = enable_interrupt(tegra_clone, true);
-		if ((val & USB_ID_STATUS) && (val & USB_VBUS_STATUS))
-			val |= USB_VBUS_INT_STATUS;
-		else if (!(val & USB_ID_STATUS)) {
-			if (!tegra_clone->builtin_host)
-				val &= ~USB_ID_INT_STATUS;
-			else
-				val |= USB_ID_INT_STATUS;
-		} else
-			val &= ~(USB_ID_INT_STATUS | USB_VBUS_INT_STATUS);
-
-		if ((val & USB_ID_INT_STATUS) || (val & USB_VBUS_INT_STATUS)) {
-			tegra_clone->int_status = val;
-			USBH_INFO("re-detect");
-			schedule_work(&tegra_clone->work);
-		}
+		enable_interrupt(tegra_clone, true);
 	}
 }
 
@@ -254,7 +238,7 @@ static void dump_otg_state(void)
 	status = tegra_clone->int_status;
 
 	/* Debug prints */
-	USBH_INFO("%s(%d) status = %ld\n", __func__, __LINE__, status);
+	USBH_INFO("%s(%d) status = 0x%x\n", __func__, __LINE__, status);
 	if ((status & USB_ID_INT_STATUS) &&
 			(status & USB_VBUS_INT_STATUS))
 		USBH_INFO("%s(%d) got vbus & id interrupt\n", __func__, __LINE__);
@@ -268,9 +252,9 @@ static void dump_otg_state(void)
 	spin_lock_irqsave(&tegra_clone->lock, flags);
 	val = otg_readl(tegra_clone, USB_PHY_WAKEUP);
 	spin_unlock_irqrestore(&tegra_clone->lock, flags);
-	USBH_INFO("%s(%d) USB_PHY_WAKEUP val = %ld\n", __func__, __LINE__, val);
+	USBH_INFO("%s(%d) USB_PHY_WAKEUP val = 0x%x\n", __func__, __LINE__, val);
 	if (val & (USB_VBUS_INT_EN | USB_ID_INT_EN)) {
-		USBH_INFO("%s(%d) PHY_WAKEUP = %ld\n", __func__, __LINE__, val);
+		USBH_INFO("%s(%d) PHY_WAKEUP = 0x%x\n", __func__, __LINE__, val);
 	}
 
 
@@ -348,15 +332,27 @@ static void irq_work(struct work_struct *work)
 		if (status & USB_VBUS_INT_STATUS)
 			DBG("%s(%d) got vbus interrupt\n", __func__, __LINE__);
 	}
+#if 0
+	if (!(status & USB_ID_STATUS))
+		to = OTG_STATE_A_HOST;
+	else if (status & USB_VBUS_STATUS && from != OTG_STATE_A_HOST)
+		to = OTG_STATE_B_PERIPHERAL;
+	else
+		to = OTG_STATE_A_SUSPEND;
+#else
+	if (status & USB_VBUS_STATUS && from != OTG_STATE_A_HOST)
+		to = OTG_STATE_B_PERIPHERAL;
+	else
+		to = OTG_STATE_A_SUSPEND;
+#endif
+
 
 	if (!(status & USB_ID_STATUS) && (status & USB_ID_INT_EN))
 		to = OTG_STATE_A_HOST;
 	else if (status & USB_VBUS_STATUS && from != OTG_STATE_A_HOST)
 		to = OTG_STATE_B_PERIPHERAL;
-	else {
-		if (from != OTG_STATE_A_HOST)
-			to = OTG_STATE_A_SUSPEND;
-	}
+	else
+		to = OTG_STATE_A_SUSPEND;
 
 	spin_unlock_irqrestore(&tegra->lock, flags);
 	tegra_change_otg_state(tegra, to);
@@ -468,10 +464,9 @@ static ssize_t store_host_en(struct device *dev, struct device_attribute *attr,
 	struct tegra_otg_data *tegra = platform_get_drvdata(pdev);
 	unsigned long host;
 
-	if (sscanf(buf, "%ld", &host) != 1 || host < 0 || host > 1)
+	if (sscanf(buf, "%d", &host) != 1 || host < 0 || host > 1)
 		return -EINVAL;
 
-	USBH_INFO("%s %ld ", __func__, host);
 	if (host) {
 		enable_interrupt(tegra, false);
 		tegra_change_otg_state(tegra, OTG_STATE_A_SUSPEND);
@@ -688,10 +683,10 @@ static void tegra_otg_resume(struct device *dev)
 	DBG("%s(%d) END\n", __func__, __LINE__);
 }
 
-static void tegra_otg_shutdown(struct platform_device *pdev)
+static void tegra_otg_shutdown(struct device *dev)
 {
-	struct otg_transceiver *otg = &tegra_clone->otg;
 	DBG("%s(%d) BEGIN\n", __func__, __LINE__);
+	struct otg_transceiver *otg = &tegra_clone->otg;
 	usb_gadget_disconnect(otg->gadget);
 }
 

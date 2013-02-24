@@ -2485,13 +2485,9 @@ static int finish_port_resume(struct usb_device *udev)
 	int	status = 0;
 	u16	devstatus;
 	struct usb_hcd  *hcd = bus_to_hcd(udev->bus);
-	#ifdef CONFIG_QCT_9K_MODEM
-	extern struct usb_hcd *mdm_hsic_usb_hcd;
-	#endif //CONFIG_QCT_9K_MODEM
 
 	//htc++
-	#ifdef CONFIG_QCT_9K_MODEM
-	if (machine_is_evitareul() && hcd == mdm_hsic_usb_hcd)
+	if (machine_is_evitareul())
 	{
 		extern int get_ap2mdm_sw_bc5_status(void);
 		extern void ehci_qct_mdm_resume_suspend_recover(void);
@@ -2509,7 +2505,6 @@ static int finish_port_resume(struct usb_device *udev)
 			ehci_qct_mdm_resume_suspend_recover();
 		}
 	}
-	#endif //CONFIG_QCT_9K_MODEM
 	//htc--
 
 	/* caller owns the udev device lock */

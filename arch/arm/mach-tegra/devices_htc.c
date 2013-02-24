@@ -39,7 +39,6 @@
 #include <linux/proc_fs.h>
 #include <linux/reboot.h>
 #include <linux/cpu.h>
-#include <linux/sched.h>
 
 #include <mach/dma.h>
 #include <mach/board_htc.h>
@@ -110,7 +109,7 @@ int __init parse_tag_IMEI(const struct tag *tags)
 		}
 	}
 	if (!find) {
-		printk(KERN_ERR "[IMEI] parse_tag_IMEI(): error: IMEI ATAG not found %s\n", IMEI);
+		printk(KERN_ERR "[IMEI] parse_tag_IMEI(): error: IMEI ATAG not found\n", IMEI);
 		return -1;
 	}
 	else {
@@ -142,7 +141,7 @@ static ssize_t IMEI_read(struct file *file, char __user *buf, size_t len, loff_t
 }
 
 static const struct file_operations IMEI_file_ops = {
-	.owner = THIS_MODULE,
+	.owner = "system",
 	.read = IMEI_read,
 };
 
@@ -472,21 +471,6 @@ int board_zchg_mode(void)
 EXPORT_SYMBOL(board_zchg_mode);
 __setup("enable_zcharge=", board_zchg_mode_init);
 
-static unsigned int sf = 0;
-int __init board_sf_init(char *s)
-{
-	sf = simple_strtoul(s, 0, 10);
-	return 1;
-}
-
-int get_tamper_sf(void)
-{
-	return sf;
-}
-
-EXPORT_SYMBOL(get_tamper_sf);
-__setup("androidboot.sf=", board_sf_init);
-
 static int build_flag;
 
 static int __init board_bootloader_setup(char *str)
@@ -636,7 +620,7 @@ static ssize_t SKUID_read(struct file *file, char __user *buf,
 }
 
 static const struct file_operations SKUID_file_ops = {
-	.owner = THIS_MODULE,
+	.owner = "system",
 	.read = SKUID_read,
 };
 
@@ -1003,20 +987,10 @@ static int reboot_callback(struct notifier_block *nb,
 	/*
 	 * NOTE: data is NULL when reboot w/o command or shutdown
 	 */
-	struct task_struct* t;
 	char* cmd;
 
 	cmd = (char*) (data ? data : "");
-	pr_info("kernel_restart(cmd=%s) - triggered with task: %s (%d:%d)\n",
-			data ? data : "<null>",
-			current->comm, current->tgid, current->pid);
-	pr_info("parents of %s:\n", current->comm);
-	t = current->parent;
-	do {
-		pr_info("    %s (%d:%d)\n", t->comm, t->tgid, t->pid);
-		t = t->parent;
-	} while (t->parent != t);
-	dump_stack();
+	pr_debug("restart command: %s\n", data ? cmd : "<null>");
 
 	switch (event)
 	{
@@ -1050,6 +1024,25 @@ static int __init htc_reset_reason_init(void)
 	return 0;
 }
 arch_initcall(htc_reset_reason_init);
+
+static int __cpuinit debug_cpu_toggle_notify(struct notifier_block *self,
+		unsigned long action, void *hcpu)
+{
+	MF_DEBUG("00UP0007");
+	switch (action) {
+	case CPU_ONLINE:
+	case CPU_DEAD:
+		pr_info("[CPUHP] current online: %d%d%d%d\n",
+				cpu_online(0), cpu_online(1), cpu_online(2), cpu_online(3));
+	}
+	return NOTIFY_OK;
+}
+static int __init htc_debug_cpu_toggle_init(void)
+{
+	hotcpu_notifier(debug_cpu_toggle_notify, 0);
+	return 0;
+}
+late_initcall(htc_debug_cpu_toggle_init);
 
 unsigned get_last_reboot_params_battery_level(void)
 {

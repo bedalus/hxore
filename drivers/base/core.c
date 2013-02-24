@@ -23,6 +23,7 @@
 #include <linux/mutex.h>
 #include <linux/async.h>
 #include <linux/pm_runtime.h>
+#include <linux/delay.h>
 
 #include "base.h"
 #include "power/power.h"
@@ -1753,6 +1754,8 @@ void device_shutdown(void)
 			dev_dbg(dev, "shutdown\n");
 			dev->driver->shutdown(dev);
 		}
+		/* FIXME: Workaround for reboot hung issue with phone storage encription */
+		mdelay(10);
 		put_device(dev);
 
 		spin_lock(&devices_kset->list_lock);

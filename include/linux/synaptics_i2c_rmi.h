@@ -17,6 +17,10 @@
 #ifndef _LINUX_SYNAPTICS_I2C_RMI_H
 #define _LINUX_SYNAPTICS_I2C_RMI_H
 
+#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_SWEEP2WAKE
+#include <linux/input.h>
+#endif
+
 #define SYNAPTICS_I2C_RMI_NAME "synaptics-rmi-ts"
 #define SYNAPTICS_T1007_NAME "synaptics-t1007"
 #define SYNAPTICS_T1021_NAME "synaptics-t1021"
@@ -24,7 +28,6 @@
 #define SYNAPTICS_3K_INCELL_NAME "synaptics-3k-incell"
 #define SYNAPTICS_3200_NAME "synaptics-3200"
 #define SYNAPTICS_FW_3_2_PACKRAT 1115999
-#define SYNAPTICS_FW_NOCAL_PACKRAT 1293981
 
 
 #define SYN_CONFIG_SIZE 32 * 16

@@ -35,6 +35,7 @@
 #include <linux/spi/spi.h>
 #include <linux/tegra_uart.h>
 #include <linux/fsl_devices.h>
+#include <linux/i2c/atmel_mxt_ts.h>
 #include <linux/memblock.h>
 #include <linux/gpio_keys.h>
 #include <linux/synaptics_i2c_rmi.h>
@@ -69,6 +70,7 @@
 #include <mach/thermal.h>
 #include <mach/mhl.h>
 #include <mach/tegra-bb-power.h>
+#include <mach/tegra_fiq_debugger.h>
 #include <mach/htc_bdaddress.h>
 #include <mach/htc_util.h>
 #include <mach/mfootprint.h>
@@ -81,6 +83,7 @@
 #include "fuse.h"
 #include "pm.h"
 #include "touch.h"
+#include "htc_perf.h"
 #include "wakeups-t3.h"
 
 #define PMC_WAKE_STATUS         0x14
@@ -96,10 +99,6 @@ extern bool is_resume_from_deep_suspend(void);
 
 #include <media/rawchip/rawchip.h>
 #include <media/rawchip/Yushan_HTC_Functions.h>
-
-#ifdef CONFIG_SERIAL_TEGRA_BRCM_LPM
-#include <linux/bcm_bt_lpm.h>
-#endif
 
 static struct balanced_throttle throttle_list[] = {
 	{
@@ -749,34 +748,12 @@ static void enrc2b_i2c_init(void)
 #endif
 }
 
-#ifdef CONFIG_SERIAL_TEGRA_BRCM
-#ifdef CONFIG_SERIAL_TEGRA_BRCM_LPM
-static struct bcm_bt_lpm_platform_data bcm_bt_lpm_pdata = {
-	.gpio_wake = ENRC2B_GPIO_BT_WAKE,
-	.gpio_host_wake = ENRC2B_GPIO_BT_HOST_WAKE,
-	.request_lpm_off_locked = tegra_lpm_off_locked,
-	.request_lpm_on_locked = tegra_lpm_on_locked,
-};
-
-struct platform_device bcm_bt_lpm_device = {
-	.name = "bcm_bt_lpm",
-	.id = 0,
-	.dev = {
-		.platform_data = &bcm_bt_lpm_pdata,
-	},
-};
-#endif
-#endif
-
 static struct platform_device *enrc2b_uart_devices[] __initdata = {
 	&tegra_uarta_device,
 	&tegra_uartb_device,
 	&tegra_uartc_device,
 	&tegra_uartd_device,
 	&tegra_uarte_device,
-#ifdef CONFIG_SERIAL_TEGRA_BRCM_LPM
-    &bcm_bt_lpm_device,
-#endif
 };
 
 static struct uart_clk_parent uart_parent_clk[] = {
@@ -859,9 +836,6 @@ static void __init enrc2b_uart_init(void)
 #ifdef CONFIG_SERIAL_TEGRA_BRCM
 	enrc2b_brcm_uart_pdata = enrc2b_uart_pdata;
 	enrc2b_brcm_uart_pdata.bt_wakeup_pin_supported = 1;
-#ifdef CONFIG_SERIAL_TEGRA_BRCM_LPM
-	enrc2b_brcm_uart_pdata.exit_lpm_cb = bcm_bt_lpm_exit_lpm;
-#endif
 	enrc2b_brcm_uart_pdata.bt_wakeup_pin = ENRC2B_GPIO_BT_WAKE;
 	enrc2b_brcm_uart_pdata.host_wakeup_pin = ENRC2B_GPIO_BT_HOST_WAKE;
 	tegra_uartc_device.dev.platform_data = &enrc2b_brcm_uart_pdata;
@@ -1018,6 +992,31 @@ static const u8 config[] = {
         0x00
 };
 
+static struct mxt_platform_data atmel_mxt_info = {
+        .x_line         = 19,
+        .y_line         = 11,
+        .x_size         = 960,
+        .y_size         = 540,
+        .blen           = 0x10,
+        .threshold      = 0x32,
+        .voltage        = 3300000,              /* 3.3V */
+        .orient         = 3,
+        .config         = config,
+        .config_length  = 168,
+        .config_crc     = MXT_CONFIG_CRC,
+        .irqflags       = IRQF_TRIGGER_FALLING,
+/*      .read_chg       = &read_chg, */
+        .read_chg       = NULL,
+};
+
+static struct i2c_board_info __initdata atmel_i2c_info[] = {
+	{
+		I2C_BOARD_INFO("atmel_mxt_ts", MXT224_I2C_ADDR1),
+		.irq = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PH6),
+		.platform_data = &atmel_mxt_info,
+	}
+};
+
 //virtual key for XC board and later (3 virtual keys)
 static ssize_t Aproj_virtual_keys_show_XC(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -1082,67 +1081,6 @@ exit:
 
 static struct synaptics_i2c_rmi_platform_data edge_ts_3k_data_XB[] = {
 	{
-		.version = 0x3332,
-		.packrat_number = 1293981,
-		.abs_x_min = 0,
-		.abs_x_max = 1100,
-		.abs_y_min = 0,
-		.abs_y_max = 1770,
-		.display_width = 720,
-		.display_height = 1280,
-		.notifyFinger = NULL, /* restore browser cap, */
-		.gpio_irq = TOUCH_GPIO_IRQ,
-		.power = powerfun,
-		.report_type = SYN_AND_REPORT_TYPE_B,
-		.reduce_report_level = {60, 60, 50, 0, 0},
-		.default_config = 2,
-		.psensor_detection = 1,
-		.config = {
-			0x35, 0x4A, 0x31, 0x32, 0x80, 0x7F, 0x03, 0x14,
-			0x14, 0x08, 0x00, 0x19, 0x19, 0x00, 0x10, 0x4C,
-			0x04, 0x6C, 0x07, 0x02, 0x14, 0x1E, 0x05, 0x41,
-			0xF2, 0x27, 0x8B, 0x02, 0x01, 0x3C, 0x0C, 0x03,
-			0x10, 0x03, 0xEC, 0x4D, 0x71, 0x51, 0x04, 0xBF,
-			0xD4, 0xC6, 0x00, 0xC8, 0x00, 0x00, 0x00, 0x00,
-			0x0A, 0x04, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x19, 0x01, 0x00, 0x0A, 0x16, 0x0C, 0x0A,
-			0x00, 0x14, 0x0A, 0x40, 0x64, 0x07, 0xF3, 0xC8,
-			0xBE, 0x43, 0x2A, 0x05, 0x00, 0x00, 0x00, 0x00,
-			0x4C, 0x6C, 0x74, 0x3C, 0x32, 0x00, 0x00, 0x00,
-			0x4C, 0x6C, 0x74, 0x1E, 0x05, 0x00, 0x02, 0xFA,
-			0x00, 0x80, 0x03, 0x0E, 0x1F, 0x11, 0x38, 0x00,
-			0x13, 0x04, 0x1B, 0x00, 0x10, 0x0A, 0xC0, 0xC0,
-			0xC0, 0xC0, 0xA8, 0xA0, 0xA8, 0xA0, 0x4B, 0x4A,
-			0x48, 0x47, 0x45, 0x44, 0x42, 0x40, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x88,
-			0x13, 0x00, 0x64, 0x00, 0xC8, 0x00, 0x80, 0x0A,
-			0x80, 0xB8, 0x0B, 0x00, 0xC0, 0x19, 0x02, 0x02,
-			0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x20, 0x20,
-			0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x58, 0x5B,
-			0x5D, 0x5F, 0x61, 0x63, 0x66, 0x69, 0x00, 0x8C,
-			0x00, 0x10, 0x28, 0x00, 0x00, 0x00, 0x02, 0x04,
-			0x06, 0x08, 0x0A, 0x0D, 0x0E, 0x04, 0x31, 0x04,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF,
-			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x51, 0x51, 0x51,
-			0x51, 0x51, 0x51, 0x51, 0x51, 0xCD, 0x0D, 0x04,
-			0x00, 0x06, 0x0C, 0x0D, 0x0B, 0x15, 0x17, 0x16,
-			0x18, 0x19, 0x1A, 0x1B, 0x11, 0x14, 0x12, 0x0F,
-			0x0E, 0x09, 0x0A, 0x07, 0x02, 0x01, 0x00, 0xFF,
-			0xFF, 0xFF, 0xFF, 0xFF, 0x04, 0x05, 0x02, 0x06,
-			0x01, 0x0C, 0x07, 0x08, 0x0E, 0x10, 0x0F, 0x12,
-			0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0x10,
-			0x00, 0x10, 0x00, 0x10, 0x80, 0x80, 0x80, 0x80,
-			0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
-			0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
-			0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
-			0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
-			0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00,
-			0x0F, 0x00, 0x4F, 0x53
-		},
-	},
-	{
 		.version = 0x3332, /* fw32 */
 		.packrat_number = 1195020,
 		.abs_x_min = 0,
@@ -1151,7 +1089,7 @@ static struct synaptics_i2c_rmi_platform_data edge_ts_3k_data_XB[] = {
 		.abs_y_max = 1770,
 		.display_width = 720,
 		.display_height = 1280,
-		.notifyFinger = NULL, /* restore browser cap, */
+		.notifyFinger = restoreCap, /* restore browser cap, */
 		.gpio_irq = TOUCH_GPIO_IRQ,
 		.power = powerfun,
 		.default_config = 2,
@@ -1208,7 +1146,7 @@ static struct synaptics_i2c_rmi_platform_data edge_ts_3k_data_XB[] = {
 		.abs_y_max = 1770,
 		.display_width = 720,
 		.display_height = 1280,
-		.notifyFinger = NULL, /* restore browser cap, */
+		.notifyFinger = restoreCap, /* restore browser cap, */
 		.gpio_irq = TOUCH_GPIO_IRQ,
 		.power = powerfun,
 		.default_config = 2,
@@ -1263,7 +1201,7 @@ static struct synaptics_i2c_rmi_platform_data edge_ts_3k_data_XB[] = {
 		.abs_x_max = 1100,
 		.abs_y_min = 0,
 		.abs_y_max = 1770,
-		.notifyFinger = NULL, /* restore browser cap, */
+		.notifyFinger = restoreCap, /* restore browser cap, */
 		.gpio_irq = TOUCH_GPIO_IRQ,
 		.power = powerfun,
 		.default_config = 2,
@@ -1314,7 +1252,7 @@ static struct synaptics_i2c_rmi_platform_data edge_ts_3k_data_XB[] = {
 		.abs_x_max = 1100,
 		.abs_y_min = 0,
 		.abs_y_max = 1770,
-		.notifyFinger = NULL, /* restore browser cap, */
+		.notifyFinger = restoreCap, /* restore browser cap, */
 		.gpio_irq = TOUCH_GPIO_IRQ,
 		.power = powerfun,
 		.default_config = 2,
@@ -1515,31 +1453,34 @@ static int __init enrc2b_touch_init(void)
 	return retval;
 }
 
-static void enrc2b_usb_hsic_postsupend(void)
+static int enrc2b_usb_hsic_postsupend(void)
 {
 	pr_debug("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
 	baseband_xmm_set_power_status(BBXMM_PS_L2);
 #endif
+	return 0;
 }
 
-static void enrc2b_usb_hsic_preresume(void)
+static int enrc2b_usb_hsic_preresume(void)
 {
 	pr_debug("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
 	baseband_xmm_set_power_status(BBXMM_PS_L2TOL0);
 #endif
+	return 0;
 }
 
-static void enrc2b_usb_hsic_phy_ready(void)
+static int enrc2b_usb_hsic_phy_ready(void)
 {
 	pr_debug("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
 	baseband_xmm_set_power_status(BBXMM_PS_L0);
 #endif
+	return 0;
 }
 
-static void enrc2b_usb_hsic_phy_off(void)
+static int enrc2b_usb_hsic_phy_off(void)
 {
 	pr_debug("%s\n", __func__);
 #ifdef CONFIG_TEGRA_BB_XMM_POWER
@@ -1549,6 +1490,7 @@ static void enrc2b_usb_hsic_phy_off(void)
 	baseband_xmm_set_power_status(BBXMM_PS_L3);
 #endif
 #endif
+	return 0;
 }
 
 static struct tegra_usb_phy_platform_ops hsic_xmm_plat_ops = {
@@ -2221,8 +2163,8 @@ static int mistouch_gpio_active() {
 
 static struct gpio_keys_button ENRC2_PROJECT_keys[] = {
 	[0] = GPIO_KEY(KEY_POWER, PU6, 1),
-	[1] = GPIO_KEY(KEY_VOLUMEUP, PI6, 1),
-	[2] = GPIO_KEY(KEY_VOLUMEDOWN, PW3, 1),
+	[1] = GPIO_KEY(KEY_VOLUMEUP, PI6, 0),
+	[2] = GPIO_KEY(KEY_VOLUMEDOWN, PW3, 0),
  };
 
 static struct gpio_keys_platform_data ENRC2_PROJECT_keys_platform_data = {
@@ -2334,8 +2276,7 @@ static struct i2c_board_info i2c_mhl_sii_info[] =
 static void __init enrc2b_init(void)
 {
 	struct kobject *properties_kobj;
-	struct proc_dir_entry* proc;
-    int rc = 0;
+
 	tegra_thermal_init(&thermal_data,
 				throttle_list,
 				ARRAY_SIZE(throttle_list));
@@ -2372,11 +2313,8 @@ static void __init enrc2b_init(void)
 		printk(KERN_WARNING "[KEY]%s: register reset key fail\n", __func__);
         properties_kobj = kobject_create_and_add("board_properties", NULL);
 	if (properties_kobj) {
-		rc = sysfs_create_group(properties_kobj, &Aproj_properties_attr_group_XC);
+		sysfs_create_group(properties_kobj, &Aproj_properties_attr_group_XC);
 	}
-    if (!properties_kobj || rc)
-        pr_err("failed to create board_properties\n");
-
 	enrc2b_audio_init();
 	enrc2b_gps_init();
 	enrc2b_baseband_init();
@@ -2395,6 +2333,7 @@ static void __init enrc2b_init(void)
 #endif
 	config_tegra_usb_reset_wdt_gpios();
 	//enrc2b_nfc_init();
+	struct proc_dir_entry* proc;
 	proc = create_proc_read_entry("dying_processes", 0, NULL, dying_processors_read_proc, NULL);
 	if (!proc)
 		printk(KERN_ERR"Create /proc/dying_processes FAILED!\n");
@@ -2404,6 +2343,7 @@ static void __init enrc2b_init(void)
 		htc_monitor_init();
 		htc_pm_monitor_init();
 	}
+	tegra_serial_debug_init(TEGRA_UARTA_BASE, INT_WDT_CPU, NULL, -1, -1);
 }
 
 static void __init enrc2b_reserve(void)

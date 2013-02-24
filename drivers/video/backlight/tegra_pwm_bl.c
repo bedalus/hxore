@@ -72,7 +72,7 @@ static ssize_t store(struct device *dev,
 static ssize_t show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
-	return 0;
+	return ;
 }
 
 static DEVICE_ATTR(enhance, 0664, show, store);

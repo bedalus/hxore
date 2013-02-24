@@ -133,7 +133,6 @@ EXPORT_SYMBOL(get_restart_level);
 static void restart_level_changed(void)
 {
 	struct subsys_data *subsys;
-	unsigned long flags;
 
 	if (cpu_is_msm8x60() && restart_level == RESET_SUBSYS_COUPLED) {
 		restart_orders = orders_8x60_all;
@@ -145,10 +144,10 @@ static void restart_level_changed(void)
 		n_restart_orders = ARRAY_SIZE(orders_8x60_modems);
 	}
 
-	spin_lock_irqsave(&subsystem_list_lock, flags);
+	mutex_lock(&subsystem_list_lock);
 	list_for_each_entry(subsys, &subsystem_list, list)
 		subsys->restart_order = _update_restart_order(subsys);
-	spin_unlock_irqrestore(&subsystem_list_lock, flags);
+	mutex_unlock(&subsystem_list_lock);
 }
 
 static int restart_level_set(const char *val, struct kernel_param *kp)

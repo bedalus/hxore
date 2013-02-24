@@ -1070,16 +1070,8 @@ bool bthp_cpu_num_catchup (void)
 EXPORT_SYMBOL (bthp_cpu_num_catchup);
 #endif
 
-static int max_cpus_notify(struct notifier_block *nb, unsigned long n, void *p)
-{
-	pr_info("PM QoS PM_QOS_MAX_ONLINE_CPUS %lu\n", n);
-	return NOTIFY_OK;
-}
-
 static int min_cpus_notify(struct notifier_block *nb, unsigned long n, void *p)
 {
-	pr_info("PM QoS PM_QOS_MIN_ONLINE_CPUS %lu\n", n);
-
 	mutex_lock(tegra3_cpu_lock);
 
 	if ((n >= 1) && is_lp_cluster()) {
@@ -1104,10 +1096,6 @@ static int min_cpus_notify(struct notifier_block *nb, unsigned long n, void *p)
 
 static struct notifier_block min_cpus_notifier = {
 	.notifier_call = min_cpus_notify,
-};
-
-static struct notifier_block max_cpus_notifier = {
-	.notifier_call = max_cpus_notify,
 };
 
 void tegra_auto_hotplug_governor(unsigned int cpu_freq, bool suspend)
@@ -1241,10 +1229,6 @@ int tegra_auto_hotplug_init(struct mutex *cpu_lock)
 
 	if (pm_qos_add_notifier(PM_QOS_MIN_ONLINE_CPUS, &min_cpus_notifier))
 		pr_err("%s: Failed to register min cpus PM QoS notifier\n",
-			__func__);
-
-	if (pm_qos_add_notifier(PM_QOS_MAX_ONLINE_CPUS, &max_cpus_notifier))
-		pr_err("%s: Failed to register max cpus PM QoS notifier\n",
 			__func__);
 
 	return 0;
@@ -1399,7 +1383,7 @@ static struct kernel_param_ops bthp_ctrl_ops = {
 	.set = bthp_ctrl_set,
 	.get = bthp_ctrl_get,
 };
-module_param_cb(bthp_en, &bthp_ctrl_ops, &bthp_en, 0444);
+module_param_cb(bthp_en, &bthp_ctrl_ops, &bthp_en, 0664);
 
 /* controller for activity trigger */
 static bool at_en = 1;

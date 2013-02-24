@@ -23,6 +23,7 @@ config ARCH_TEGRA_2x_SOC
 	select ARCH_TEGRA_HAS_PCIE
 	select CPU_V7
 	select ARM_GIC
+	select ARM_SAVE_DEBUG_CONTEXT if PM_SLEEP
 	select ARCH_REQUIRE_GPIOLIB
 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
 	select USB_ULPI if USB_SUPPORT
@@ -50,6 +51,7 @@ config ARCH_TEGRA_3x_SOC
 	select ARCH_TEGRA_HAS_DUAL_CPU_CLUSTERS
 	select CPU_V7
 	select ARM_GIC
+	select ARM_SAVE_DEBUG_CONTEXT if PM_SLEEP
 	select GIC_SET_MULTIPLE_CPUS if SMP
 	select ARCH_REQUIRE_GPIOLIB
 	select USB_ARCH_HAS_EHCI if USB_SUPPORT
@@ -209,7 +211,14 @@ config HTC_POWER_OFF
 
 config HTC_PROJECT
        bool "HTC Project"
+       select HTC_DEBUG_FILE_NODE
+       select WATCHDOG
+       select TEGRA_WATCHDOG
+       select TEGRA_WATCHDOG_ENABLE_ON_PROBE
+       select TEGRA_FIQ_DEBUGGER
+       select BOOTPARAM_SOFTLOCKUP_PANIC
        select ANDROID_RAM_CONSOLE_APPEND_PMIC_STATUS_BITS
+       select DEBUG_MUTEXES
        select HTC_POWER_OFF
        help
          HTC Project
@@ -254,9 +263,11 @@ config MACH_ENRC2U
          Support for HTC EndeavorC2#U platform
 
 config MACH_ENRC2B
-       bool "EndeavorC2#B board"
+       bool "EndeavorC2#U board"
        depends on ARCH_TEGRA_3x_SOC
        depends on HTC_PROJECT
+       select MACH_HAS_SND_SOC_TEGRA_MAX98088 if SND_SOC
+       select MACH_HAS_SND_SOC_TEGRA_TLV320AIC326X if SND_SOC
        select TEGRA_SLOW_CSITE
        select VIDEO_CHANGE_IN_AD5823
        select RAWCHIP_ENABLE
@@ -299,11 +310,9 @@ choice
 
 config TEGRA_CPU_AP33
        bool "AP33/1.5GHz"
-       depends on MACH_ENDEAVORU || MACH_ENDEAVORTD
 
 config TEGRA_CPU_AP37
        bool "AP37/1.7GHz"
-       depends on MACH_ENRC2B || MACH_ENRC2U || MACH_EVITAREUL
 
 endchoice
 
@@ -493,15 +502,6 @@ config TEGRA_CLUSTER_CONTROL
 	depends on ARCH_TEGRA_HAS_DUAL_CPU_CLUSTERS
 	default y if PM_SLEEP
 
-config TEGRA_MPDECISION
-        bool "Enable better automatic CPU hot-plugging"
-	depends on HOTPLUG_CPU && CPU_FREQ && !ARCH_CPU_PROBE_RELEASE && !ARCH_TEGRA_2x_SOC
-	default y
-	help
-	  This option enables turning CPUs off/on and switching tegra
-	  high/low power CPU clusters automatically, corresponding to
-	  CPU frequency load.
-
 config TEGRA_AUTO_HOTPLUG
 	bool "Enable automatic CPU hot-plugging"
 	depends on HOTPLUG_CPU && CPU_FREQ && !ARCH_CPU_PROBE_RELEASE && !ARCH_TEGRA_2x_SOC
@@ -555,6 +555,13 @@ config TEGRA_EMC_TO_DDR_CLOCK
 	default "2" if ARCH_TEGRA_2x_SOC
 	default "1"
 
+config TEGRA_INTERACTIVE_GOV_ON_EARLY_SUSPEND
+	bool "Use interactive cpu frequency governor when device enters early suspend"
+	depends on HAS_EARLYSUSPEND && CPU_FREQ && !TEGRA_CONSERVATIVE_GOV_ON_EARLY_SUSPEND
+	default y
+	help
+	 Also will restore to original cpu frequency governor when device is resumed
+
 config TEGRA_SE_ON_CBUS
 	bool "To Drive SE clock from cbus"
 	default y
@@ -564,6 +571,13 @@ config TEGRA_SE_ON_CBUS
 config TEGRA_CBUS_CLOCK_DIVIDER
         int "CBUS clock divider"
         default "2"
+
+config TEGRA_CONVSERVATIVE_GOV_ON_EARLYSUPSEND
+	bool "Use conservative cpu frequency governor when device enters early suspend"
+	depends on HAS_EARLYSUSPEND && CPU_FREQ
+	default n
+	help
+	 Also will restore to original cpu frequency governor when device is resumed
 
 config TEGRA_STAT_MON
         bool "Enable H/W statistics monitor"
@@ -830,16 +844,3 @@ config SENSE_4_PLUS
 config MEMORY_FOOTPRINT_DEBUGGING
 	bool "footprint for debugging"
 	default n
-	
-config TEGRA_GPU_OC_520
-	depends on TEGRA_SILICON_PLATFORM
-	bool "enable GPU overclocking to 520Mhz"
-	default n
-	help
-	  Choose y to oc the GPU to 520Mhz
-	  
-config TEGRA3_VARIANT_CPU_OVERCLOCK
-    bool "CPU Overclocking"
-    default n
-    help
-      CPU Overclocking option

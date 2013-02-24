@@ -1075,9 +1075,9 @@ static int tegra3_cpu_cmplx_clk_set_parent(struct clk *c, struct clk *p)
 		if (p == c->parent)		/* already switched - exit*/
 			return 0;
 
-		if (rate > p->max_rate) {	/* over-clocking - no switch */
-			pr_warn("%s: No %s mode switch to %s at rate %lu max rate %lu\n",
-				 __func__, c->name, p->name, rate, p->max_rate);
+		if ((rate > p->max_rate) || (rate < p->min_rate)) {
+			pr_warn("%s: No %s mode switch to %s at rate %lu\n",
+				 __func__, c->name, p->name, rate);
 			return -ECANCELED;
 		}
 		flags = TEGRA_POWER_CLUSTER_IMMEDIATE;
@@ -1646,7 +1646,6 @@ static int tegra3_pll_clk_set_rate(struct clk *c, unsigned long rate)
 {
 	u32 val, p_div, old_base;
 	unsigned long input_rate;
-	unsigned long flags = 0;
 	const struct clk_pll_freq_table *sel;
 	struct clk_pll_freq_table cfg;
 
@@ -1766,6 +1765,7 @@ static int tegra3_pll_clk_set_rate(struct clk *c, unsigned long rate)
 	}
 	MF_DEBUG("00000001");
 
+	unsigned long flags;
 	if (c->reg == 0xd0)
 		spin_lock_irqsave(&dc_spinlock_clk, flags);
 	clk_writel(val, c->reg + PLL_BASE);

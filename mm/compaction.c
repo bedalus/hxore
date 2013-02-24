@@ -673,7 +673,7 @@ static int compact_node(int nid, bool sync)
 			.nr_freepages = 0,
 			.nr_migratepages = 0,
 			.order = -1,
-            .sync = sync,
+			.sync = sync,
 		};
 
 		zone = &pgdat->node_zones[zoneid];
@@ -699,7 +699,7 @@ int compact_nodes(bool sync)
 	int nid;
 
 	for_each_online_node(nid)
-		compact_node(nid, sync);
+	    compact_node(nid, sync);
 
 	return COMPACT_COMPLETE;
 }
