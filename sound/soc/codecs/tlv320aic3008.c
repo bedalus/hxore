@@ -1814,7 +1814,7 @@ static int aic3008_resume(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static struct snd_soc_codec_driver soc_codec_dev_aic3008 __refdata = {
+static struct snd_soc_codec_driver soc_codec_dev_aic3008 = {
 	.probe =	aic3008_probe,
 	.remove =	aic3008_remove,
 	.suspend =	aic3008_suspend,
