@@ -2,15 +2,15 @@
     export PATH=$PATH:/opt/toolchain/bin/
     export ARCH=arm
     export SUBARCH=arm
-    export CROSS_COMPILE=arm-eabi-
+    export CROSS_COMPILE=arm-linux-androideabi-
 
 # delete everything
 rm -fR kernelinjector.oxp/structure.new/modules/*
 rm -f kernelinjector.oxp/zImage.new/zImage
 
-cd kernelinjector.oxp
-sh extract
-cd ..
+# cd kernelinjector.oxp
+# sh extract
+# cd ..
 
 # make
 make -j3
@@ -24,10 +24,8 @@ find fs -type f -name '*.ko' -exec cp -f {} kernelinjector.oxp/structure.new/mod
 cp -f arch/arm/boot/zImage kernelinjector.oxp/zImage.new/zImage
 
 cd kernelinjector.oxp
-sh compile
+./compile
+cp bootimg.out/boot.img ~/Documents_OSX/boot.img
 cd ..
 
 #gzip kernelinjector.oxp/structure.new/modules/* kernelinjector.oxp/structure.new/modules/mods.tar.gz
-
-# ready for further editing
-
