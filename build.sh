@@ -1,26 +1,29 @@
     echo -e "Making HOX+ zImage\n"
-    export PATH=$PATH:/opt/toolchain_linaro2/bin/
+    export PATH=$PATH:/opt/toolchain/bin/
     export ARCH=arm
     export SUBARCH=arm
-    export CROSS_COMPILE=arm-eabi-
-    make -j3 
-## > /home/dave/android/history.txt
+    export CROSS_COMPILE=arm-linux-androideabi-
 
-    cp /home/dave/android/hox+/arch/arm/boot/zImage /home/dave/android/kernelinjector.oxp_stock/zImage.new/
-    cp /home/dave/android/hox+/drivers/scsi/scsi_wait_scan.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+# delete everything
+#rm -fR kernelinjector.oxp/structure.new/modules/*
+rm -f kernelinjector.oxp/zImage.new/zImage
 
-    cp /home/dave/android/hox+/arch/arm/mach-tegra/baseband-xmm-power2.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+# cd kernelinjector.oxp
+# sh extract
+# cd ..
 
-    cp /home/dave/android/hox+/drivers/net/usb/raw_ip_net.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+# make
+make -j3
 
-    cp /home/dave/android/hox+/drivers/usb/class/cdc-acm.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+# copy modules
+find ./ -type f -name '*.ko' -exec cp -f {} kernelinjector.oxp/ramdisk/modules \;
 
-    cp /home/dave/android/hox+/drivers/usb/serial/baseband_usb_chr.ko /home/dave/android/kernelinjector.oxp_stock/structure.new/modules/
+# copy zImage
+cp -f arch/arm/boot/zImage kernelinjector.oxp/zImage.new/zImage
 
-    ls -l /home/dave/android/hox+/arch/arm/boot/zImage 
+cd kernelinjector.oxp
+./compile
+cp bootimg.out/boot.img ~/Documents_OSX/boot.img
+cd ..
 
-    cd /home/dave/android/kernelinjector.oxp_stock/
-    rm /home/dave/android/kernelinjector.oxp_stock/bootimg.out/boot.img
-    sh /home/dave/android/kernelinjector.oxp_stock/compile
-    echo -e "Check zImage timestamp is correct\n"
-##
+#gzip kernelinjector.oxp/structure.new/modules/* kernelinjector.oxp/structure.new/modules/mods.tar.gz
