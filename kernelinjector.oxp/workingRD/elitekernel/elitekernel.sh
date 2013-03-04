@@ -22,6 +22,8 @@ touch /data/local/em_modules_deployed
 mount -o remount,ro /system
 
 # run EliteKernel tweaks (overrides ROM tweaks)
+echo "sio" > /sys/block/mmcblk0/queue/scheduler
+echo "sio" > /sys/block/mmcblk1/queue/scheduler
 
 # need to enable all CPU cores in order to set them up
 echo 4 > /sys/power/pnpmgr/hotplug/min_on_cpus
@@ -98,6 +100,7 @@ echo "2048" > /sys/block/mmcblk0/bdi/read_ahead_kb;
 echo "2048" > /sys/block/mmcblk0/queue/read_ahead_kb;
 
 # feed urandom data to /dev/random to avoid system blocking (potential security risk, use at own peril!)
+/elitekernel/rngd --rng-device=/dev/urandom --random-device=/dev/random --background --feed-interval=60
 
 # activate delayed config to override ROM
 /system/xbin/busybox nohup /system/bin/sh /elitekernel/elitekernel_delayed.sh 2>&1 >/dev/null &
