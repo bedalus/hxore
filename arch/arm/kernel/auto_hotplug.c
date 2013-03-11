@@ -48,7 +48,7 @@
  */
 #define DEBUG 0
 
-#define CPUS_AVAILABLE		num_possible_cpus()
+#define CPUS_AVAILABLE		2
 /*
  * SAMPLING_PERIODS * MIN_SAMPLING_RATE is the minimum
  * load history which will be averaged
@@ -194,7 +194,7 @@ static void hotplug_decision_work_fn(struct work_struct *work)
 	/*
 	 * Reduce the sampling rate dynamically based on online cpus.
 	 */
-	sampling_rate = MIN_SAMPLING_RATE * (online_cpus * online_cpus);
+	sampling_rate = MIN_SAMPLING_RATE * 4;
 #if DEBUG
 	pr_info("sampling_rate is: %d\n", jiffies_to_msecs(sampling_rate));
 #endif
@@ -247,14 +247,6 @@ static void hotplug_online_single_work_fn(struct work_struct *work)
 
 static void hotplug_offline_work_fn(struct work_struct *work)
 {
-	int cpu;
-	for_each_online_cpu(cpu) {
-		if (cpu) {
-			cpu_down(cpu);
-			pr_info("auto_hotplug: CPU%d down.\n", cpu);
-			break;
-		}
-	}
 	schedule_delayed_work_on(0, &hotplug_decision_work, MIN_SAMPLING_RATE);
 }
 

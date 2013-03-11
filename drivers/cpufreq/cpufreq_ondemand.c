@@ -29,38 +29,37 @@
 #include <linux/highuid.h>
 #include <linux/cpu_debug.h>
 #include <linux/kthread.h>
+#include <linux/clk.h>
 
-/* Google systrace just supports Interactive governor (option -l)
- * Just backport Interactive trace points for Ondemand governor use
- */
-#define CREATE_TRACE_POINTS
-#include <trace/events/cpufreq_interactive.h>
+#include "../../arch/arm/mach-tegra/clock.h"
+#include "../../arch/arm/mach-tegra/pm.h"
+//#include "../../arch/arm/mach-tegra/tegra_pmqos.h"
 
 /*
  * dbs is used in this file as a shortform for demandbased switching
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
-#define DEF_FREQUENCY_UP_THRESHOLD		(98)
+#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(15)
+#define DEF_FREQUENCY_UP_THRESHOLD		(85)
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
-#define MICRO_FREQUENCY_UP_THRESHOLD		(100)
+#define MICRO_FREQUENCY_UP_THRESHOLD		(85)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
 #define MIN_FREQUENCY_UP_THRESHOLD		(11)
 #define MAX_FREQUENCY_UP_THRESHOLD		(100)
-#define DEF_SAMPLING_RATE			(50000)
+#define DEF_SAMPLING_RATE			(30000)
 #define DEF_IO_IS_BUSY				(1)
-#define DEF_UI_DYNAMIC_SAMPLING_RATE		(30000)
-#define DEF_UI_COUNTER				(5)
+#define DEF_UI_DYNAMIC_SAMPLING_RATE		(20000)
+#define DEF_UI_COUNTER				(3)
 #define DEF_TWO_PHASE_FREQ			(1000000)
 #define DEF_TWO_PHASE_BOTTOM_FREQ   (340000)
-#define DEF_TWO_PHASE_GO_MAX_LOAD   (100)
+#define DEF_TWO_PHASE_GO_MAX_LOAD   (95)
 #define DEF_UX_LOADING              (30)
 #define DEF_UX_FREQ                 (340000)
 #define DEF_UX_BOOST_THRESHOLD      (0)
-#define DEF_INPUT_BOOST_DURATION    (1000000)
+#define DEF_INPUT_BOOST_DURATION    (50000000)
 
 /*
  * The polling frequency of this governor depends on the capability of
@@ -123,6 +122,10 @@ static DEFINE_PER_CPU(struct cpu_dbs_info_s, od_cpu_dbs_info);
 
 static unsigned int dbs_enable;	/* number of CPUs using this policy */
 static unsigned int g_ui_counter = 0;
+
+/* lpcpu variables */
+static struct clk *cpu_lp_clk;
+static unsigned int idle_top_freq;
 
 /*
  * dbs_mutex protects dbs_enable in governor start/stop.
@@ -681,12 +684,8 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int load, unsig
 	//else if (p->cur == p->max)
 	//	return;
 
-    trace_cpufreq_interactive_target (p->cpu, load, p->cur, freq);
-
 	__cpufreq_driver_target(p, freq, dbs_tuners_ins.powersave_bias ?
 			CPUFREQ_RELATION_L : CPUFREQ_RELATION_H);
-
-    trace_cpufreq_interactive_up (p->cpu, freq, p->cur);
 }
 
 static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
@@ -840,7 +839,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 #else
 		if (counter < 5) {
-			counter++;
+            /* prevent the lpcpu from slowing down the system */
+            if (!is_lp_cluster())
+                counter++;
+            else
+                counter += 2;
+
 			if (counter > 2) {
                 if (!phase && dbs_tuners_ins.two_phase_dynamic)
                     mid_idle_busy = true;
@@ -858,6 +862,11 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		if (dbs_tuners_ins.two_phase_freq != 0 && phase == 0) {
 			debug_freq = dbs_tuners_ins.two_phase_freq;
 
+			/* limit the frequency to max lpcpu if lpcpu is online
+             * this should avoid fast "peak"-switching out of lpcpu */
+			if (is_lp_cluster())
+				debug_freq = idle_top_freq;		
+					
             if (dbs_tuners_ins.two_phase_dynamic) {
                 /* scale UP by 2 */
                 unsigned int scaled_freq = policy->cur << 1;
@@ -884,11 +893,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
             }
 
             /* NEVER less than current speed */
-            if (debug_freq < policy->cur)
+            if (debug_freq < policy->cur){
                 if (debug_load > DEF_TWO_PHASE_GO_MAX_LOAD)
                     debug_freq = policy->max;
                 else
                     debug_freq = policy->cur;
+            }
 
         /* busy phase */
 		} else {
@@ -934,10 +944,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	}
 
     if (time_before64 (now, dbs_tuners_ins.floor_valid_time)) {
-        trace_cpufreq_interactive_notyet (policy->cpu,
-                                          debug_load,
-                                          policy->cur,
-                                          policy->cur);
         return;
     }
 
@@ -953,10 +959,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	/* Check for frequency decrease */
 	/* if we cannot reduce the frequency anymore, break out early */
 	if (policy->cur == policy->min) {
-        trace_cpufreq_interactive_already (policy->cpu,
-                                           debug_load,
-                                           policy->cur,
-                                           policy->cur);
 		return;
     }
 
@@ -987,11 +989,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		if (!dbs_tuners_ins.powersave_bias) {
 			debug_freq = freq_next;
 
-            trace_cpufreq_interactive_target (policy->cpu,
-                                              debug_load,
-                                              policy->cur,
-                                              freq_next);
-
 			__cpufreq_driver_target(policy, freq_next,
 					CPUFREQ_RELATION_L);
 		} else {
@@ -999,16 +996,9 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 					CPUFREQ_RELATION_L);
 			debug_freq = freq;
 
-            trace_cpufreq_interactive_target (policy->cpu,
-                                              debug_load,
-                                              policy->cur,
-                                              freq);
-
 			__cpufreq_driver_target(policy, freq,
 				CPUFREQ_RELATION_L);
 		}
-
-        trace_cpufreq_interactive_down (policy->cpu, debug_freq, policy->cur);
 
 #ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
         CPU_DEBUG_PRINTK(CPU_DEBUG_GOVERNOR,
@@ -1509,6 +1499,9 @@ static int __init cpufreq_gov_dbs_init(void)
 	cputime64_t wall;
 	u64 idle_time;
 	int cpu = get_cpu();
+
+    cpu_lp_clk = clk_get_sys(NULL, "cpu_lp");
+    idle_top_freq = clk_get_max_rate(cpu_lp_clk) / 1000;
 
 	idle_time = get_cpu_idle_time_us(cpu, &wall);
 	put_cpu();
