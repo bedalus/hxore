@@ -26,9 +26,12 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/miscdevice.h>
+#include <linux/platform_device.h>
 #include <linux/cpu.h>
 #include <linux/workqueue.h>
 #include <linux/sched.h>
+#include <linux/delay.h>
 
 #include <linux/io.h>
 #include <linux/clk.h>
@@ -40,8 +43,7 @@
 #include <linux/earlysuspend.h>
 #endif
 
-#define CPUS_AVAILABLE		2
-#define MIN_SAMPLING_RATE	msecs_to_jiffies(2000)
+#define MIN_SAMPLING_RATE	msecs_to_jiffies(5000)
 
 /* Control flags */
 unsigned char flags;
@@ -53,12 +55,49 @@ struct delayed_work hotplug_unpause_work;
 struct work_struct hotplug_online_single_work;
 struct work_struct hotplug_offline_all_work;
 
+static int cpusallowed = 2;
+
+static ssize_t cpusallowed_status_read(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"%u\n", cpusallowed);
+}
+
+static ssize_t cpusallowed_status_write(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	unsigned int data;
+
+	if (sscanf(buf, "%u\n", &data) == 1)
+		cpusallowed = data;
+	else
+		pr_info("%s: input error\n", __FUNCTION__);
+
+	return size;
+}
+
+static DEVICE_ATTR(cpusallowed, S_IRUGO | S_IWUGO, cpusallowed_status_read, cpusallowed_status_write);
+
+static struct attribute *cpusallowed_attributes[] = {
+	&dev_attr_cpusallowed.attr,
+	NULL
+};
+
+static struct attribute_group cpusallowed_group = {
+	.attrs  = cpusallowed_attributes,
+};
+
+static struct miscdevice cpusallowed_device = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "cpusallowed",
+};
+
 static void hotplug_decision_work_fn(struct work_struct *work)
 {
 	unsigned int online_cpus, available_cpus;
 
 	online_cpus = num_online_cpus();
-	available_cpus = CPUS_AVAILABLE;
+	available_cpus = cpusallowed;
+	if (available_cpus > 4) available_cpus = 4;
+	if (available_cpus < 1) available_cpus = 1;
 
 	if (flags & HOTPLUG_PAUSED) {
 		schedule_delayed_work_on(0, &hotplug_decision_work, MIN_SAMPLING_RATE);
@@ -74,13 +113,16 @@ static void hotplug_offline_all_work_fn(struct work_struct *work)
 {
 	int cpu;
 
-	for_each_online_cpu(cpu) {
-		if(cpu==0)
-			continue;
-		cpu_down(cpu);
+	while (!is_lp_cluster()) {
+		for_each_online_cpu(cpu) {
+			if(cpu==0)
+				continue;
+			cpu_down(cpu);
+		}
+		pr_info("auto_hotplug: Attempt to enter cpu_lp");
+		if(!clk_set_parent(clk_get_sys(NULL, "cpu"), clk_get_sys(NULL, "cpu_lp")))
+			tegra_cpu_set_speed_cap(NULL);
 	}
-	if(!clk_set_parent(clk_get_sys(NULL, "cpu"), clk_get_sys(NULL, "cpu_lp")))
-		tegra_cpu_set_speed_cap(NULL);
 }
 
 static void hotplug_online_single_work_fn(struct work_struct *work)
@@ -137,8 +179,7 @@ static struct early_suspend auto_hotplug_suspend = {
 
 static int __init auto_hotplug_init(void)
 {
-	pr_info("auto_hotplug: v0.220 by _thalamus\n");
-	pr_info("auto_hotplug: %d CPUs detected\n", CPUS_AVAILABLE);
+	int ret;
 
 	INIT_DELAYED_WORK(&hotplug_decision_work, hotplug_decision_work_fn);
 	INIT_DELAYED_WORK_DEFERRABLE(&hotplug_unpause_work, hotplug_unpause_work_fn);
@@ -151,6 +192,22 @@ static int __init auto_hotplug_init(void)
 	flags |= HOTPLUG_PAUSED;
 	schedule_delayed_work_on(0, &hotplug_decision_work, HZ * 10);
 	schedule_delayed_work(&hotplug_unpause_work, HZ * 30);
+
+	// sysfs interface
+	pr_info("%s misc_register(%s)\n", __FUNCTION__, cpusallowed_device.name);
+	ret = misc_register(&cpusallowed_device);
+	if (ret) {
+		pr_err("%s misc_register(%s) fail\n", __FUNCTION__,
+				cpusallowed_device.name);
+		return 1;
+	}
+	if (sysfs_create_group(&cpusallowed_device.this_device->kobj,
+				&cpusallowed_group) < 0) {
+		pr_err("%s sysfs_create_group fail\n", __FUNCTION__);
+		pr_err("Failed to create sysfs group for device (%s)!\n",
+				cpusallowed_device.name);
+	}
+
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&auto_hotplug_suspend);
