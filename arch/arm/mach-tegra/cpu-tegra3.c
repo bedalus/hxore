@@ -40,10 +40,19 @@
 #include "cpu-tegra.h"
 #include "clock.h"
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
+
 #define INITIAL_STATE		TEGRA_HP_DISABLED
 #define UP2G0_DELAY_MS		70
 #define UP2Gn_DELAY_MS		100
 #define DOWN_DELAY_MS		2000
+
+/* Control flags */
+unsigned char flags;
+#define EARLYSUSPEND_ACTIVE	(1 << 3)
+static int cpusallowed = 2;
 
 static struct mutex *tegra3_cpu_lock;
 
@@ -753,12 +762,9 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 	} else if (cpu < nr_cpu_ids) {
 		if (up) {
 			cpu_up(cpu);
-			CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " turn on CPU %d, online CPU 0-3=[%d%d%d%d]\n",
-					cpu, cpu_online(0), cpu_online(1), cpu_online(2), cpu_online(3));
 		} else {
-			cpu_down(cpu);
-			CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " turn off CPU %d, online CPU 0-3=[%d%d%d%d]\n",
-					cpu, cpu_online(0), cpu_online(1), cpu_online(2), cpu_online(3));
+			if ((num_online_cpus() > cpusallowed) || (flags & EARLYSUSPEND_ACTIVE))
+				cpu_down(cpu);
 		}
 	}
 }
@@ -1410,8 +1416,66 @@ static struct kernel_param_ops at_ctrl_ops = {
 };
 module_param_cb(at_en, &at_ctrl_ops, &at_en, 0664);
 
+static ssize_t cpusallowed_status_read(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int available_cpus = sprintf(buf,"%u\n", cpusallowed);
+
+	if (available_cpus > 4) available_cpus = 4;
+	if (available_cpus < 1) available_cpus = 1;
+	return available_cpus;
+}
+
+static ssize_t cpusallowed_status_write(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	unsigned int data;
+
+	if (sscanf(buf, "%u\n", &data) == 1)
+		cpusallowed = data;
+	else
+		pr_info("%s: input error\n", __FUNCTION__);
+
+	return size;
+}
+
+static DEVICE_ATTR(cpusallowed, S_IRUGO | S_IWUGO, cpusallowed_status_read, cpusallowed_status_write);
+
+static struct attribute *cpusallowed_attributes[] = {
+	&dev_attr_cpusallowed.attr,
+	NULL
+};
+
+static struct attribute_group cpusallowed_group = {
+	.attrs  = cpusallowed_attributes,
+};
+
+static struct miscdevice cpusallowed_device = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "cpusallowed",
+};
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void auto_hotplug_early_suspend(struct early_suspend *handler)
+{
+	pr_info("auto_hotplug: early suspend handler\n");
+	flags |= EARLYSUSPEND_ACTIVE;
+}
+
+static void auto_hotplug_late_resume(struct early_suspend *handler)
+{
+	pr_info("auto_hotplug: late resume handler\n");
+	flags &= ~EARLYSUSPEND_ACTIVE;
+}
+
+static struct early_suspend auto_hotplug_suspend = {
+	.suspend = auto_hotplug_early_suspend,
+	.resume = auto_hotplug_late_resume,
+};
+#endif /* CONFIG_HAS_EARLYSUSPEND */
+
 static int __init tegra_auto_hotplug_debug_init(void)
 {
+	int ret;
+
 	if (!tegra3_cpu_lock)
 		return -ENOENT;
 
@@ -1423,6 +1487,25 @@ static int __init tegra_auto_hotplug_debug_init(void)
 			   PM_QOS_DEFAULT_VALUE);
 	pm_qos_add_request(&max_cpu_req, PM_QOS_MAX_ONLINE_CPUS,
 			   PM_QOS_DEFAULT_VALUE);
+
+	// sysfs interface
+	pr_info("%s misc_register(%s)\n", __FUNCTION__, cpusallowed_device.name);
+	ret = misc_register(&cpusallowed_device);
+	if (ret) {
+		pr_err("%s misc_register(%s) fail\n", __FUNCTION__,
+				cpusallowed_device.name);
+		return 1;
+	}
+	if (sysfs_create_group(&cpusallowed_device.this_device->kobj,
+				&cpusallowed_group) < 0) {
+		pr_err("%s sysfs_create_group fail\n", __FUNCTION__);
+		pr_err("Failed to create sysfs group for device (%s)!\n",
+				cpusallowed_device.name);
+	}
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	register_early_suspend(&auto_hotplug_suspend);
+#endif
 
 	if (!debugfs_create_file(
 		"min_cpus", S_IRUGO, hp_debugfs_root, NULL, &min_cpus_fops))
