@@ -761,7 +761,8 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " system is not running\n");
 	} else if (cpu < nr_cpu_ids) {
 		if (up) {
-			cpu_up(cpu);
+			if ((num_online_cpus() < cpusallowed) && (!(flags & EARLYSUSPEND_ACTIVE)))
+				cpu_up(cpu);
 		} else {
 			if ((num_online_cpus() > cpusallowed) || (flags & EARLYSUSPEND_ACTIVE))
 				cpu_down(cpu);
