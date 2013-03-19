@@ -692,7 +692,8 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 			up = false;
 		} else if (!is_lp_cluster() && !no_lp &&
 			   !pm_qos_request(PM_QOS_MIN_ONLINE_CPUS) &&
-			   ((now - last_change_time) >= down_delay)) {
+			   ((now - last_change_time) >= down_delay) &&
+			   (flags & EARLYSUSPEND_ACTIVE)) {
 			if(!clk_set_parent(cpu_clk, cpu_lp_clk)) {
 				CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " enter LPCPU");
 				hp_stats_update(CONFIG_NR_CPUS, true);
