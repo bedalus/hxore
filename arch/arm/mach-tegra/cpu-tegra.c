@@ -551,7 +551,7 @@ int tegra_update_cpu_speed(unsigned long rate)
 	if (freqs.old == freqs.new)
 		return ret;
 
-	if (freqs.new < rate_save && rate_save >= 880000) {
+	if (rate_save > 475000) {
 		if (is_lp_cluster()) {
 			orig_nice = task_nice(current);
 
