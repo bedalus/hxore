@@ -707,38 +707,40 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 			hotplug_wq, &hotplug_work, up2gn_delay);
 		break;
 	case TEGRA_HP_UP:
-		if (is_lp_cluster() && !no_lp) {
-			if(!clk_set_parent(cpu_clk, cpu_g_clk)) {
-				CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
-						 " leave LPCPU (%s)", __func__);
-				last_change_time = now;
-				hp_stats_update(CONFIG_NR_CPUS, false);
-				hp_stats_update(0, true);
+		if (!(flags & EARLYSUSPEND_ACTIVE)) {
+			if (is_lp_cluster() && !no_lp) {
+				if(!clk_set_parent(cpu_clk, cpu_g_clk)) {
+					CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
+							 " leave LPCPU (%s)", __func__);
+					last_change_time = now;
+					hp_stats_update(CONFIG_NR_CPUS, false);
+					hp_stats_update(0, true);
 
 #if defined(CONFIG_BEST_TRADE_HOTPLUG)
-                lp_ticket_reset (ktime_to_ns (ktime_get ()));
+		        lp_ticket_reset (ktime_to_ns (ktime_get ()));
 #endif
-				/* catch-up with governor target speed */
-				tegra_cpu_set_speed_cap(NULL);
-			}
-		} else {
-			switch (tegra_cpu_speed_balance()) {
-			/* cpu speed is up and balanced - one more on-line */
-			case TEGRA_CPU_SPEED_BALANCED:
-				cpu = cpumask_next_zero(0, cpu_online_mask);
-				if (cpu < nr_cpu_ids)
-					up = true;
-				break;
-			/* cpu speed is up, but skewed - remove one core */
-			case TEGRA_CPU_SPEED_SKEWED:
-				cpu = tegra_get_slowest_cpu_n();
-				if (cpu < nr_cpu_ids)
-					up = false;
-				break;
-			/* cpu speed is up, but under-utilized - do nothing */
-			case TEGRA_CPU_SPEED_BIASED:
-			default:
-				break;
+					/* catch-up with governor target speed */
+					tegra_cpu_set_speed_cap(NULL);
+				}
+			} else {
+				switch (tegra_cpu_speed_balance()) {
+				/* cpu speed is up and balanced - one more on-line */
+				case TEGRA_CPU_SPEED_BALANCED:
+					cpu = cpumask_next_zero(0, cpu_online_mask);
+					if (cpu < nr_cpu_ids)
+						up = true;
+					break;
+				/* cpu speed is up, but skewed - remove one core */
+				case TEGRA_CPU_SPEED_SKEWED:
+					cpu = tegra_get_slowest_cpu_n();
+					if (cpu < nr_cpu_ids)
+						up = false;
+					break;
+				/* cpu speed is up, but under-utilized - do nothing */
+				case TEGRA_CPU_SPEED_BIASED:
+				default:
+					break;
+				}
 			}
 		}
 		queue_delayed_work(
@@ -1088,13 +1090,14 @@ static int min_cpus_notify(struct notifier_block *nb, unsigned long n, void *p)
 			clk_get_min_rate(cpu_g_clk) / 1000);
 		tegra_update_cpu_speed(speed);
 
-		if (!clk_set_parent(cpu_clk, cpu_g_clk)) {
-			CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
-					 " leave LPCPU (%s)", __func__);
-			last_change_time = jiffies;
-			hp_stats_update(CONFIG_NR_CPUS, false);
-			hp_stats_update(0, true);
-		}
+		if (!(flags & EARLYSUSPEND_ACTIVE))
+			if (!clk_set_parent(cpu_clk, cpu_g_clk)) {
+				CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
+						 " leave LPCPU (%s)", __func__);
+				last_change_time = jiffies;
+				hp_stats_update(CONFIG_NR_CPUS, false);
+				hp_stats_update(0, true);
+			}
 	}
 	/* update governor state machine */
 	tegra_cpu_set_speed_cap(NULL);
@@ -1119,15 +1122,16 @@ void tegra_auto_hotplug_governor(unsigned int cpu_freq, bool suspend)
 	if (suspend) {
 		hp_state = TEGRA_HP_IDLE;
 
-		/* Switch to G-mode if suspend rate is high enough */
-		if (is_lp_cluster() && (cpu_freq >= idle_bottom_freq)) {
-			if (!clk_set_parent(cpu_clk, cpu_g_clk)) {
-				CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
-						 " leave LPCPU (%s)", __func__);
-				hp_stats_update(CONFIG_NR_CPUS, false);
-				hp_stats_update(0, true);
+		/* Switch to G-mode if suspend rate is high enough */	
+		if (!(flags & EARLYSUSPEND_ACTIVE))
+			if (is_lp_cluster() && (cpu_freq >= idle_bottom_freq)) {
+				if (!clk_set_parent(cpu_clk, cpu_g_clk)) {
+					CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
+							 " leave LPCPU (%s)", __func__);
+					hp_stats_update(CONFIG_NR_CPUS, false);
+					hp_stats_update(0, true);
+				}
 			}
-		}
 		return;
 	}
 
