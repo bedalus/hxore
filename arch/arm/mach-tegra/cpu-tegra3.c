@@ -52,7 +52,7 @@
 /* Control flags */
 unsigned char flags;
 #define EARLYSUSPEND_ACTIVE	(1 << 3)
-static int cpusallowed = 2;
+static int cpusallowed = 1;
 
 static struct mutex *tegra3_cpu_lock;
 

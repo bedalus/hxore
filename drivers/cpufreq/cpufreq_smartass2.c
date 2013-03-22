@@ -48,7 +48,7 @@
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define DEFAULT_IDEAL_FREQ 475000
+#define DEFAULT_IDEAL_FREQ 13000000
 static unsigned int ideal_freq;
 
 /*
@@ -56,7 +56,7 @@ static unsigned int ideal_freq;
  * Zero disables and causes to always jump straight to max frequency.
  * When below the ideal freqeuncy we always ramp up to the ideal freq.
  */
-#define DEFAULT_RAMP_UP_STEP 300000
+#define DEFAULT_RAMP_UP_STEP 51000
 static unsigned int ramp_up_step;
 
 /*
@@ -64,7 +64,7 @@ static unsigned int ramp_up_step;
  * Zero disables and will calculate ramp down according to load heuristic.
  * When above the ideal freqeuncy we always ramp down to the ideal freq.
  */
-#define DEFAULT_RAMP_DOWN_STEP 150000
+#define DEFAULT_RAMP_DOWN_STEP 51000
 static unsigned int ramp_down_step;
 
 /*
@@ -93,7 +93,7 @@ static unsigned int up_rate_us;
 #define DEFAULT_DOWN_RATE_US 100000
 static unsigned int down_rate_us;
 
-#define DEFAULT_SAMPLING_RATE 15000
+#define DEFAULT_SAMPLING_RATE 20000
 static unsigned int sampling_rate;
 
 #define DEFAULT_INPUT_BOOST_DURATION 500000
