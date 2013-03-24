@@ -39,7 +39,7 @@
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
 
-//#include "../../arch/arm/mach-tegra/tegra_pmqos.h"
+#include "../../arch/arm/mach-tegra/hxore.h"
 
 /******************** Tunable parameters: ********************/
 
@@ -524,7 +524,7 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	// Scale up if load is above max or if there where no idle cycles since coming out of idle,
 	// additionally, if we are at or above the ideal_speed, verify we have been at this frequency
 	// for at least up_rate_us:
-	if (debug_load > max_cpu_load && cur < policy->max
+	if (debug_load > (max_cpu_load + (2 * cpusallowed)) && cur < policy->max
 			&& (cur < this_smartmax->ideal_speed
 					|| cputime64_sub(now, this_smartmax->freq_change_time)
 							>= up_rate_us)) {
@@ -535,7 +535,7 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	}
 	// Similarly for scale down: load should be below min and if we are at or below ideal
 	// frequency we require that we have been at this frequency for at least down_rate_us:
-	else if (debug_load < min_cpu_load && cur > policy->min
+	else if (debug_load < (min_cpu_load + (5 * cpusallowed)) && cur > policy->min
 			&& (cur > this_smartmax->ideal_speed
 					|| cputime64_sub(now, this_smartmax->freq_change_time)
 							>= down_rate_us)) {

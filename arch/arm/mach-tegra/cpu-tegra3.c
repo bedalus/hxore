@@ -39,6 +39,7 @@
 #include "pm.h"
 #include "cpu-tegra.h"
 #include "clock.h"
+#include "hxore.h"
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
@@ -52,7 +53,6 @@
 /* Control flags */
 unsigned char flags;
 #define EARLYSUSPEND_ACTIVE	(1 << 3)
-static int cpusallowed = 1;
 
 static struct mutex *tegra3_cpu_lock;
 
