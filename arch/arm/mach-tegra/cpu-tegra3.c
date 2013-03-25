@@ -54,6 +54,9 @@
 unsigned char flags;
 #define EARLYSUSPEND_ACTIVE	(1 << 3)
 
+int cpusallowed = 1;
+bool camera_hook = false;
+
 static struct mutex *tegra3_cpu_lock;
 
 static struct workqueue_struct *hotplug_wq;
@@ -766,8 +769,11 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		if (up) {
 			if ((num_online_cpus() < cpusallowed) && (!(flags & EARLYSUSPEND_ACTIVE)))
 				cpu_up(cpu);
+			if ((num_online_cpus() < 2) && (camera_hook))
+				cpu_up(cpu);
 		} else {
-			if ((num_online_cpus() > cpusallowed) || (flags & EARLYSUSPEND_ACTIVE))
+			if (((num_online_cpus() > cpusallowed) && (!camera_hook))
+				|| (flags & EARLYSUSPEND_ACTIVE))
 				cpu_down(cpu);
 		}
 	}
@@ -1427,7 +1433,7 @@ static ssize_t cpusallowed_status_read(struct device *dev, struct device_attribu
 	int available_cpus = sprintf(buf,"%u\n", cpusallowed);
 
 	if (available_cpus > 4) available_cpus = 4;
-	if (available_cpus < 1) available_cpus = 1;
+	if (available_cpus < 1) available_cpus = 1;	
 	return available_cpus;
 }
 

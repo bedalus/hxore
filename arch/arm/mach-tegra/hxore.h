@@ -18,4 +18,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-static int cpusallowed = 1;
+extern int cpusallowed;
+
+extern bool camera_hook;

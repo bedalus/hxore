@@ -32,10 +32,14 @@
 
 #include <media/tegra_camera.h>
 
+#include "../../../../arch/arm/mach-tegra/hxore.h"
+
 /* Eventually this should handle all clock and reset calls for the isp, vi,
  * vi_sensor, and csi modules, replacing nvrm and nvos completely for camera
  */
 #define TEGRA_CAMERA_NAME "tegra_camera"
+
+extern bool camera_hook;
 
 struct tegra_camera_dev {
 	struct device *dev;
@@ -364,6 +368,8 @@ static int tegra_camera_open(struct inode *inode, struct file *file)
 	ret = tegra_camera_enable_clk(dev);
 	if (ret)
 		goto open_exit;
+	camera_hook = true;
+
 open_exit:
 	mutex_unlock(&dev->tegra_camera_lock);
 	return ret;
@@ -391,6 +397,7 @@ static int tegra_camera_release(struct inode *inode, struct file *file)
 	tegra_camera_power_off(dev);
 	if (ret)
 		goto release_exit;
+	camera_hook = false;
 
 release_exit:
 	mutex_unlock(&dev->tegra_camera_lock);

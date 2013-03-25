@@ -41,6 +41,8 @@
 
 #include "../../arch/arm/mach-tegra/hxore.h"
 
+extern int cpusallowed;
+
 /******************** Tunable parameters: ********************/
 
 /*
