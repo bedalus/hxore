@@ -42,6 +42,9 @@
 #include <linux/platform_data/ina230.h>
 #include <mach/restart.h>
 #include <linux/atomic.h>
+#ifdef CONFIG_BLX
+#include <linux/blx.h>
+#endif
 
 /* used for debug if function called */
 #define FUNC_CALL_CHECK 0
@@ -988,6 +991,8 @@ static void batt_work_func(struct work_struct *work)
 		mutex_unlock(&htc_batt_info.info_lock);
 	}
 #endif
+	//for blx
+	htc_batt_set_full_level(get_charginglimit());
 
 	return;
 }
