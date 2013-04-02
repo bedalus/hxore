@@ -951,7 +951,7 @@ static int cpufreq_smartmax_boost_task(void *data) {
 
 		boost_running = true;
 
-		boost_end_time = ktime_to_ns(ktime_get()) + boost_duration;
+		boost_end_time = ktime_to_ns(ktime_get()) + cur_boost_duration;
 
 		if (lock_policy_rwsem_write(0) < 0)
 			continue;
