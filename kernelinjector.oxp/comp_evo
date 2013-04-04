@@ -1,0 +1,13 @@
+rm -f ./bootimg.out/evo.img
+mkdir bootimg.out
+cd ./evodisk
+chmod a+x ./elitekernel/*
+gksudo find . | cpio -o -H newc | gzip > ../newramdisk.cpio.gz
+cd ..
+./tools/mkbootimg --kernel ./zImage.new/zImage --ramdisk ./newramdisk.cpio.gz --pagesize 2048 -o ./bootimg.out/evo.img
+
+# rm -fR ./ramdisk
+# rm -fR ./boot.img-kernel
+# rm -fR ./boot.img-ramdisk.gz
+rm -fR ./newramdisk.cpio.gz
+
