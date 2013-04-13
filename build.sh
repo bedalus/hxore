@@ -13,7 +13,7 @@ rm -f kernelinjector.oxp/zImage.new/zImage
 # cd ..
 
 # make
-make -j3
+make -j7
 
 # copy modules
 find ./ -type f -name '*.ko' -exec cp -f {} kernelinjector.oxp/ramdisk/modules \;
