@@ -135,6 +135,7 @@ struct rcu_data {
        u8 wait;                /* goes false when this cpu consents to
                                 * the retirement of the current batch */
        struct rcu_list cblist[2]; /* current & previous callback lists */
+		raw_spinlock_t lock;	/* protects the above callback lists */
        s64 nqueued;            /* #callbacks queued (stats-n-debug) */
 } ____cacheline_aligned_in_smp;
 
@@ -276,9 +277,9 @@ void call_rcu_sched(struct rcu_head *cb, void (*func)(struct rcu_head *rcu))
        cb->next = NULL;
 
        raw_local_irq_save(flags);
-       smp_mb();
 
        rd = &rcu_data[rcu_cpu()];
+	raw_spin_lock(&rd->lock);
        which = ACCESS_ONCE(rcu_which);
        cblist = &rd->cblist[which];
 
@@ -286,6 +287,7 @@ void call_rcu_sched(struct rcu_head *cb, void (*func)(struct rcu_head *rcu))
         * cannot be invoked under NMI. */
        rcu_list_add(cblist, cb);
        rd->nqueued++;
+	raw_spin_unlock(&rd->lock);
        smp_mb();
        raw_local_irq_restore(flags);
 }
@@ -392,11 +394,13 @@ static void __rcu_delimit_batches(struct rcu_list *pending)
        for_each_present_cpu(cpu) {
                rd = &rcu_data[cpu];
                plist = &rd->cblist[prev];
+		raw_spin_lock(&rd->lock);
                /* Chain previous batch of callbacks, if any, to the pending list */
                if (plist->head) {
                        rcu_list_join(pending, plist);
                        rcu_list_init(plist);
                }
+		raw_spin_unlock(&rd->lock);
                if (cpu_online(cpu)) /* wins race with offlining every time */
                        rd->wait = preempt_count_cpu(cpu) > idle_cpu(cpu);
                else
@@ -500,6 +504,10 @@ void __init rcu_scheduler_starting(void)
 
 void __init int rcu_start_callback_processing(void)
 {
+		int cpu;
+		for_each_possible_cpu(cpu)
+		raw_spin_lock_init(&rcu_data[cpu].lock);
+
        rcu_timer_start();
        rcu_scheduler_active = 1;
 
@@ -570,6 +578,10 @@ static int jrcud_func(void *arg)
 static __init int rcu_start_callback_processing(void)
 {
        struct task_struct *p;
+
+		int cpu;
+		for_each_possible_cpu(cpu)
+		raw_spin_lock_init(&rcu_data[cpu].lock);
 
        p = kthread_run(jrcud_func, NULL, "jrcud");
        if (IS_ERR(p)) {
