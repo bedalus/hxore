@@ -1,8 +1,8 @@
     echo -e "Making HOX+ zImage\n"
-    export PATH=$PATH:/opt/toolchain2/bin/
+    export PATH=$PATH:/opt/toolchain3/bin/
     export ARCH=arm
     export SUBARCH=arm
-    export CROSS_COMPILE=arm-zen-linux-gnueabi-
+    export CROSS_COMPILE=arm-cortex_a8-linux-gnueabi-
 
 # delete everything
 #rm -fR kernelinjector.oxp/structure.new/modules/*
