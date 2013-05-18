@@ -1929,7 +1929,7 @@ struct frontswap_ops zcache_frontswap_register_ops(void)
  * NOTHING HAPPENS!
  */
 
-static int zcache_enabled;
+static int zcache_enabled = 1; //on by default
 
 static int __init enable_zcache(char *s)
 {
@@ -1947,7 +1947,6 @@ static int __init no_cleancache(char *s)
 	use_cleancache = 0;
 	return 1;
 }
-
 __setup("nocleancache", no_cleancache);
 
 static int use_frontswap = 1;
@@ -1957,7 +1956,6 @@ static int __init no_frontswap(char *s)
 	use_frontswap = 0;
 	return 1;
 }
-
 __setup("nofrontswap", no_frontswap);
 
 static int __init enable_zcache_compressor(char *s)
