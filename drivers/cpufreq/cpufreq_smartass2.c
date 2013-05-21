@@ -50,7 +50,7 @@ extern int cpusallowed;
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define DEFAULT_IDEAL_FREQ 13000000
+#define DEFAULT_IDEAL_FREQ 16000000
 static unsigned int ideal_freq;
 
 /*
@@ -85,31 +85,31 @@ static unsigned int min_cpu_load;
  * The minimum amount of time to spend at a frequency before we can ramp up.
  * Notice we ignore this when we are below the ideal frequency.
  */
-#define DEFAULT_UP_RATE 40000
+#define DEFAULT_UP_RATE 25000
 static unsigned int up_rate;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  * Notice we ignore this when we are above the ideal frequency.
  */
-#define DEFAULT_DOWN_RATE 80000
+#define DEFAULT_DOWN_RATE 30000 // will scale up using current fq.
 static unsigned int down_rate;
 
 /* in nsecs */
-#define DEFAULT_SAMPLING_RATE 40000
+#define DEFAULT_SAMPLING_RATE 15000
 static unsigned int sampling_rate;
 
 #define DEFAULT_INPUT_BOOST_DURATION 500000
 static unsigned int input_boost_duration;
 
-static unsigned int touch_poke_freq = 1150000;
+static unsigned int touch_poke_freq = 1600000;
 static bool touch_poke = true;
 
 static bool sync_cpu_downscale = false;
 
 static unsigned int boost_freq = 1150000;
 static bool boost = true;
-static unsigned int boost_duration = 0;
+static unsigned int boost_duration = 1000000;
 
 /* Consider IO as busy */
 #define DEFAULT_IO_IS_BUSY 1
@@ -504,7 +504,7 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	// Scale up if load is above max or if there where no idle cycles since coming out of idle,
 	// additionally, if we are at or above the ideal_speed, verify we have been at this frequency
 	// for at least up_rate_us:
-	if (debug_load > (max_cpu_load + (2 * cpusallowed)) && cur < policy->max
+	if (debug_load > (max_cpu_load + (cpusallowed)) && cur < policy->max
 			&& (cur < this_smartmax->ideal_speed
 					|| cputime64_sub(now, this_smartmax->freq_change_time)
 							>= up_rate)) {
@@ -516,7 +516,7 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	else if (debug_load < (min_cpu_load + (5 * cpusallowed)) && cur > policy->min
 			&& (cur > this_smartmax->ideal_speed
 					|| cputime64_sub(now, this_smartmax->freq_change_time)
-							>= down_rate)) {
+							>= (down_rate*(cur/1000000)))) {
 		this_smartmax->ramp_dir = -1;
 		cpufreq_smartmax_freq_change(this_smartmax);
 	}
