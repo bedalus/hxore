@@ -54,7 +54,7 @@
 unsigned char flags;
 #define EARLYSUSPEND_ACTIVE	(1 << 3)
 
-int cpusallowed = 1;
+int cpusallowed = 0; //setting to 0 makes auto-hotplugging default
 bool camera_hook = false;
 
 static struct mutex *tegra3_cpu_lock;
