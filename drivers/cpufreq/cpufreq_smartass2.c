@@ -39,10 +39,6 @@
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
 
-#include "../../arch/arm/mach-tegra/hxore.h"
-
-extern int cpusallowed;
-
 /******************** Tunable parameters: ********************/
 
 /*
@@ -306,8 +302,6 @@ inline static void target_freq(struct cpufreq_policy *policy,
 	} else
 		target = new_freq;
 
-
-
 	mutex_lock(&set_speed_lock);
 
 	// only if all cpus get the target they will really scale down
@@ -367,7 +361,7 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 			// Load heuristics: Adjust new_freq such that, assuming a linear
 			// scaling of load vs. frequency, the load in the new frequency
 			// will be max_cpu_load:
-			new_freq = old_freq * this_smartmax->cur_cpu_load / max_cpu_load;
+			new_freq = old_freq * this_smartmax->cur_cpu_load / (max_cpu_load + (2*num_online_cpus()) );
 			if (new_freq > old_freq) // min_cpu_load > max_cpu_load ?!
 				new_freq = old_freq - 1;
 		}
@@ -385,7 +379,7 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 	// Scale up if load is above max or if there where no idle cycles since coming out of idle,
 	// additionally, if we are at or above the ideal_speed, verify we have been at this frequency
 	// for at least up_rate:
-	if (debug_load > max_cpu_load && cur < policy->max
+	if (debug_load > (max_cpu_load + (2*num_online_cpus())) && cur < policy->max
 			&& (cur < this_smartmax->ideal_speed
 				|| (now - this_smartmax->freq_change_time) >= up_rate))
 		this_smartmax->ramp_dir = 1;
