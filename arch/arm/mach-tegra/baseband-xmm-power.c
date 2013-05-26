@@ -1097,15 +1097,19 @@ void baseband_xmm_set_power_status(unsigned int status)
 			baseband_xmm_powerstate = status;
 			//pr_debug("BB XMM POWER STATE = %d\n", status);
 			baseband_xmm_power_L2_resume();
-		}else{
-			baseband_xmm_powerstate = status;
-		}
+		} else
+			goto exit_without_state_change;
 	default:
-		baseband_xmm_powerstate = status;
 		break;
 	}
+	baseband_xmm_powerstate = status;
+	pr_debug("BB XMM POWER STATE = %d\n", status);
+	return;
 
-	pr_info(MODULE_NAME "%s } baseband_xmm_powerstate = %d\n", __func__, baseband_xmm_powerstate);
+exit_without_state_change:
+	pr_debug("BB XMM POWER STATE = %d (not change to %d)\n",
+			baseband_xmm_powerstate, status);
+	return;
 }
 EXPORT_SYMBOL_GPL(baseband_xmm_set_power_status);
 
