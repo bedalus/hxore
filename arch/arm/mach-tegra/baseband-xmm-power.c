@@ -43,7 +43,7 @@
 
 MODULE_LICENSE("GPL");
 
-unsigned long modem_ver = XMM_MODEM_VER_1121;
+unsigned long modem_ver = XMM_MODEM_VER_1130;
 
 
 /*
@@ -894,6 +894,7 @@ static int baseband_xmm_power_off(struct platform_device *device)
 	wakeup_pending = false;
 	system_suspending = false;
 	spin_unlock_irqrestore(&xmm_lock, flags);
+	register_hsic_device = true; //start reg process again for xmm on
 #if 0 /*HTC*/
 	pr_debug(MODULE_NAME " htc_get_pcbid_info= %d\n", htcpcbid);
 	if(htcpcbid< PROJECT_PHASE_XE) {
@@ -927,6 +928,7 @@ static ssize_t baseband_xmm_onoff(struct device *dev,
 	/* check input */
 	if (buf == NULL) {
 		pr_err("%s: buf NULL\n", __func__);
+		mutex_unlock(&baseband_xmm_onoff_lock);
 		return -EINVAL;
 	}
 	/* pr_debug("%s: count=%d\n", __func__, count); */
@@ -942,10 +944,11 @@ static ssize_t baseband_xmm_onoff(struct device *dev,
 	size = sscanf(buf, "%d", &power_onoff);
 	if (size != 1) {
 		pr_err("%s: size=%d -EINVAL\n", __func__, size);
+		mutex_unlock(&baseband_xmm_onoff_lock);
 		return -EINVAL;
 	}
 #endif /* !BB_XMM_OEM1 */
-
+	
 	pr_debug("%s power_onoff=%d count=%d, buf[0]=0x%x\n",
 		__func__, power_onoff, count, buf[0]);
 
