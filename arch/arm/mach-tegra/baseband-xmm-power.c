@@ -210,6 +210,7 @@ static struct work_struct init2_work;
 static struct work_struct L2_resume_work;
 static struct delayed_work init4_work;
 static struct baseband_power_platform_data *baseband_power_driver_data;
+static int waiting_falling_flag = 0;
 static bool register_hsic_device;
 static struct wake_lock wakelock;
 static struct usb_device *usbdev;
@@ -1086,6 +1087,7 @@ pr_info("bedalus BASEBAND|||||||| marker04\n");
 		}
 		if (wakeup_pending == false) {
 			gpio_set_value(data->modem.xmm.ipc_hsic_active, 0);
+			waiting_falling_flag = 0;
 			pr_debug("gpio host active low->\n");
 		}
 		break;
@@ -1134,6 +1136,10 @@ irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 			pr_debug("%s - IPC_AP_WAKE_INIT1"
 				" - got falling edge\n",
 				__func__);
+			if (waiting_falling_flag == 0) {
+				pr_debug("%s return because irq must get the rising event at first\n", __func__);
+				return IRQ_HANDLED;
+			}
 			/* go to IPC_AP_WAKE_INIT1 state */
 			ipc_ap_wake_state = IPC_AP_WAKE_INIT1;
 			/* queue work */
@@ -1142,6 +1148,7 @@ irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 			pr_debug("%s - IPC_AP_WAKE_INIT1"
 				" - wait for falling edge\n",
 				__func__);
+			waiting_falling_flag = 1;
 		}
 	} else if (ipc_ap_wake_state == IPC_AP_WAKE_INIT1) {
 		if (!value) {
