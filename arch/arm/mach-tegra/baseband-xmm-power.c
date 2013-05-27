@@ -891,6 +891,7 @@ static int baseband_xmm_power_off(struct platform_device *device)
 	modem_sleep_flag = false;
 	CP_initiated_L2toL0 = false;
 	spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker01\n");
 	wakeup_pending = false;
 	system_suspending = false;
 	spin_unlock_irqrestore(&xmm_lock, flags);
@@ -1035,6 +1036,7 @@ void baseband_xmm_set_power_status(unsigned int status)
 		pr_info("L2 wake_unlock[%s]\n", wakelock.name);
 		baseband_xmm_powerstate = status;
 		spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker02\n");
 		if (wakeup_pending) {
 			spin_unlock_irqrestore(&xmm_lock, flags);
 #ifdef CONFIG_REMOVE_HSIC_L3_STATE
@@ -1066,6 +1068,7 @@ void baseband_xmm_set_power_status(unsigned int status)
                        pr_info("%s: baseband_xmm_powerstate == BBXMM_PS_L2TOL0\n", __func__);
                        if (!gpio_get_value(data->modem.xmm.ipc_ap_wake)) {
 				spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker03\n");
 				wakeup_pending = true;
 				spin_unlock_irqrestore(&xmm_lock, flags);
 				pr_info("%s: L2 race condition-CP wakeup pending\n", __func__);
@@ -1074,6 +1077,7 @@ void baseband_xmm_set_power_status(unsigned int status)
 		pr_info("L3\n");
 		baseband_xmm_powerstate = status;
 		spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker04\n");
 		system_suspending = false;
 		spin_unlock_irqrestore(&xmm_lock, flags);
 		if (wake_lock_active(&wakelock)) {
@@ -1089,6 +1093,7 @@ void baseband_xmm_set_power_status(unsigned int status)
 	case BBXMM_PS_L2TOL0:
 		pr_info("L2->L0\n");
 		spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker05\n");
 		system_suspending = false;
 		wakeup_pending = false;
 		spin_unlock_irqrestore(&xmm_lock, flags);
@@ -1170,6 +1175,7 @@ irqreturn_t baseband_xmm_power_ipc_ap_wake_irq(int irq, void *dev_id)
 				return IRQ_HANDLED;
 			}
 			spin_lock(&xmm_lock);
+pr_info("bedalus BASEBAND|||||||| marker06\n");
 			wakeup_pending = true;
 			if (system_suspending) {
 				spin_unlock(&xmm_lock);
@@ -1343,6 +1349,7 @@ static void baseband_xmm_power_L2_resume(void)
 
 	modem_sleep_flag = false;
 	spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker07\n");
 	wakeup_pending = false;
 	spin_unlock_irqrestore(&xmm_lock, flags);
 
@@ -1350,6 +1357,7 @@ static void baseband_xmm_power_L2_resume(void)
 		pr_info("CP L2->L0\n");
 		CP_initiated_L2toL0 = false;
 		queue_work(workqueue, &L2_resume_work);
+		pr_info("bedalus BASEBAND|||||||| marker01\n");
 #if 0
 		if (usbdev) {
 			struct usb_interface *intf;
@@ -1657,6 +1665,7 @@ static int baseband_xmm_power_pm_notifier_event(struct notifier_block *this,
 			return NOTIFY_STOP;
 		}
 		spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker08\n");
 		if (wakeup_pending) {
 			wakeup_pending = false;
 			spin_unlock_irqrestore(&xmm_lock, flags);
@@ -1668,11 +1677,11 @@ static int baseband_xmm_power_pm_notifier_event(struct notifier_block *this,
 		spin_unlock_irqrestore(&xmm_lock, flags);
 		return NOTIFY_OK;
 	case PM_POST_SUSPEND:
-			pr_debug("%s : PM_POST_SUSPEND\n", __func__);
-			spin_lock_irqsave(&xmm_lock, flags);
-			system_suspending = false;
-			if (wakeup_pending &&
-			(baseband_xmm_powerstate == BBXMM_PS_L2)) {
+		pr_debug("%s : PM_POST_SUSPEND\n", __func__);
+		spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker09\n");
+		system_suspending = false;
+		if (wakeup_pending && (baseband_xmm_powerstate == BBXMM_PS_L2)) {
 			wakeup_pending = false;
 			spin_unlock_irqrestore(&xmm_lock, flags);
 			pr_info("%s : Service Pending CP wakeup\n",
@@ -1745,6 +1754,7 @@ static int baseband_xmm_power_driver_probe(struct platform_device *device)
 
 	/* init spin lock */
 	spin_lock_init(&xmm_lock);
+pr_info("bedalus BASEBAND|||||||| marker10\n");
 	/* request baseband gpio(s) */
 	tegra_baseband_gpios[0].gpio = baseband_power_driver_data
 		->modem.xmm.bb_rst;
@@ -1879,6 +1889,7 @@ static int baseband_xmm_power_driver_probe(struct platform_device *device)
 	CP_initiated_L2toL0 = false;
 	baseband_xmm_powerstate = BBXMM_PS_UNINIT;
 	spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker11\n");
 	wakeup_pending = false;
 	system_suspending = false;
 	spin_unlock_irqrestore(&xmm_lock, flags);
@@ -2019,6 +2030,7 @@ static int baseband_xmm_power_driver_handle_resume(
 
 	modem_sleep_flag = false;
 	spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker12\n");
 	/* Clear wakeup pending flag */
 	wakeup_pending = false;
 	spin_unlock_irqrestore(&xmm_lock, flags);
@@ -2115,6 +2127,7 @@ static int baseband_xmm_power_suspend_noirq(struct device *dev)
 
 	pr_debug("%s\n", __func__);
 	spin_lock_irqsave(&xmm_lock, flags);
+pr_info("bedalus BASEBAND|||||||| marker13\n");
 	system_suspending = false;
 	if (wakeup_pending) {
 		wakeup_pending = false;
