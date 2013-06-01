@@ -1,0 +1,739 @@
+#ifndef COMPAT_AUTOCONF_INCLUDED
+#define COMPAT_AUTOCONF_INCLUDED
+#define COMPAT_RELEASE "ol_R5.00.14"
+#define COMPAT_KERNEL_RELEASE "ol_R5.00.21-23-g618c7e5"
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24))
+#error Compat-wireless requirement: Linux >= 2,6,24
+#endif  
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24))
+#endif 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27))
+#endif 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,33))
+#if (!defined(RHEL_MAJOR) || RHEL_MAJOR != 6 || RHEL_MINOR < 1)
+#if defined(CONFIG_FW_LOADER) || defined(CONFIG_FW_LOADER_MODULE)
+#ifndef CONFIG_COMPAT_FIRMWARE_CLASS
+#define CONFIG_COMPAT_FIRMWARE_CLASS 1
+#endif  
+#endif 
+#endif 
+#endif 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36))
+#if (!defined(RHEL_MAJOR) || RHEL_MAJOR != 6 || RHEL_MINOR < 1)
+#endif 
+#endif 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,33))
+#ifndef CONFIG_COMPAT_BT_SOCK_CREATE_NEEDS_KERN
+#define CONFIG_COMPAT_BT_SOCK_CREATE_NEEDS_KERN 1
+#endif  
+#endif 
+#if (defined(RHEL_MAJOR) && RHEL_MAJOR == 6 && RHEL_MINOR >= 0)
+#ifndef CONFIG_COMPAT_BT_SOCK_CREATE_NEEDS_KERN
+#define CONFIG_COMPAT_BT_SOCK_CREATE_NEEDS_KERN 1
+#endif  
+#endif 
+#if (defined(RHEL_MAJOR) && RHEL_MAJOR == 6 && RHEL_MINOR >= 0)
+#ifndef CONFIG_COMPAT_FIRMWARE_DATA_RW_NEEDS_FILP
+#define CONFIG_COMPAT_FIRMWARE_DATA_RW_NEEDS_FILP 1
+#endif  
+#endif 
+#ifndef CONFIG_MAC80211
+#define CONFIG_MAC80211 1
+#endif  
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,33))
+#ifndef CONFIG_MAC80211_DRIVER_API_TRACER
+#define CONFIG_MAC80211_DRIVER_API_TRACER 1
+#endif  
+#endif 
+#ifndef CONFIG_MAC80211_RC_DEFAULT
+#define CONFIG_MAC80211_RC_DEFAULT "minstrel_ht"
+#endif  
+#ifndef CONFIG_MAC80211_RC_DEFAULT_MINSTREL
+#define CONFIG_MAC80211_RC_DEFAULT_MINSTREL 1
+#endif  
+#ifndef CONFIG_COMPAT_MAC80211_RC_DEFAULT
+#define CONFIG_COMPAT_MAC80211_RC_DEFAULT "minstrel_ht"
+#endif  
+#ifndef CONFIG_MAC80211_RC_PID
+#define CONFIG_MAC80211_RC_PID 1
+#endif  
+#ifndef CONFIG_MAC80211_RC_MINSTREL
+#define CONFIG_MAC80211_RC_MINSTREL 1
+#endif  
+#ifndef CONFIG_MAC80211_RC_MINSTREL_HT
+#define CONFIG_MAC80211_RC_MINSTREL_HT 1
+#endif  
+#if defined(CONFIG_LEDS_TRIGGERS) || defined(CONFIG_LEDS_TRIGGERS_MODULE)
+#ifndef CONFIG_MAC80211_LEDS
+#define CONFIG_MAC80211_LEDS 1
+#endif  
+#endif 
+#ifndef CONFIG_MAC80211_MESH
+#define CONFIG_MAC80211_MESH 1
+#endif  
+#ifndef CONFIG_CFG80211
+#define CONFIG_CFG80211 1
+#endif  
+#ifndef CONFIG_CFG80211_DEFAULT_PS
+#define CONFIG_CFG80211_DEFAULT_PS 1
+#endif  
+#ifndef CONFIG_LIB80211
+#define CONFIG_LIB80211 1
+#endif  
+#ifndef CONFIG_LIB80211_CRYPT_WEP
+#define CONFIG_LIB80211_CRYPT_WEP 1
+#endif  
+#ifndef CONFIG_LIB80211_CRYPT_CCMP
+#define CONFIG_LIB80211_CRYPT_CCMP 1
+#endif  
+#ifndef CONFIG_LIB80211_CRYPT_TKIP
+#define CONFIG_LIB80211_CRYPT_TKIP 1
+#endif  
+#ifndef CONFIG_BT
+#define CONFIG_BT 1
+#endif  
+#ifndef CONFIG_COMPAT_BT_L2CAP
+#define CONFIG_COMPAT_BT_L2CAP 1
+#endif  
+#ifndef CONFIG_COMPAT_BT_SCO
+#define CONFIG_COMPAT_BT_SCO 1
+#endif  
+#ifndef CONFIG_BT_RFCOMM
+#define CONFIG_BT_RFCOMM 1
+#endif  
+#ifndef CONFIG_BT_RFCOMM_TTY
+#define CONFIG_BT_RFCOMM_TTY 1
+#endif  
+#ifndef CONFIG_BT_BNEP
+#define CONFIG_BT_BNEP 1
+#endif  
+#ifndef CONFIG_BT_BNEP_MC_FILTER
+#define CONFIG_BT_BNEP_MC_FILTER 1
+#endif  
+#ifndef CONFIG_BT_BNEP_PROTO_FILTER
+#define CONFIG_BT_BNEP_PROTO_FILTER 1
+#endif  
+#if defined(CONFIG_ISDN_CAPI) || defined(CONFIG_ISDN_CAPI_MODULE)
+#ifndef CONFIG_BT_CMTP
+#define CONFIG_BT_CMTP 1
+#endif  
+#endif 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28))
+#ifndef CONFIG_COMPAT_BT_HIDP
+#define CONFIG_COMPAT_BT_HIDP 1
+#endif  
+#endif 
+#ifndef CONFIG_BT_HCIUART
+#define CONFIG_BT_HCIUART "M"
+#endif  
+#ifndef CONFIG_BT_HCIUART_H4
+#define CONFIG_BT_HCIUART_H4 1
+#endif  
+#ifndef CONFIG_BT_HCIUART_BCSP
+#define CONFIG_BT_HCIUART_BCSP 1
+#endif  
+#ifndef CONFIG_BT_HCIUART_ATH3K
+#define CONFIG_BT_HCIUART_ATH3K 1
+#endif  
+#ifndef CONFIG_BT_HCIUART_LL
+#define CONFIG_BT_HCIUART_LL 1
+#endif  
+#ifndef CONFIG_BT_HCIVHCI
+#define CONFIG_BT_HCIVHCI 1
+#endif  
+#ifndef CONFIG_BT_MRVL
+#define CONFIG_BT_MRVL 1
+#endif  
+#if defined(CONFIG_PCMCIA) || defined(CONFIG_PCMCIA_MODULE)
+#ifndef CONFIG_BT_HCIDTL1
+#define CONFIG_BT_HCIDTL1 1
+#endif  
+#ifndef CONFIG_BT_HCIBT3C
+#define CONFIG_BT_HCIBT3C 1
+#endif  
+#ifndef CONFIG_BT_HCIBLUECARD
+#define CONFIG_BT_HCIBLUECARD 1
+#endif  
+#ifndef CONFIG_BT_HCIBTUART
+#define CONFIG_BT_HCIBTUART 1
+#endif  
+#endif 
+#if defined(CONFIG_WIRELESS_EXT) || defined(CONFIG_WIRELESS_EXT_MODULE)
+#ifndef CONFIG_CFG80211_WEXT
+#define CONFIG_CFG80211_WEXT 1
+#endif  
+#else 
+#endif 
+#if defined(CONFIG_STAGING) || defined(CONFIG_STAGING_MODULE)
+#ifndef CONFIG_COMPAT_STAGING
+#define CONFIG_COMPAT_STAGING 1
+#endif  
+#endif 
+#ifndef CONFIG_MAC80211_HWSIM
+#define CONFIG_MAC80211_HWSIM 1
+#endif  
+#ifndef CONFIG_ATH5K
+#define CONFIG_ATH5K 1
+#endif  
+#ifndef CONFIG_ATH9K
+#define CONFIG_ATH9K 1
+#endif  
+#ifndef CONFIG_ATH9K_HW
+#define CONFIG_ATH9K_HW 1
+#endif  
+#ifndef CONFIG_ATH9K_COMMON
+#define CONFIG_ATH9K_COMMON 1
+#endif  
+#ifndef CONFIG_ATH9K_RATE_CONTROL
+#define CONFIG_ATH9K_RATE_CONTROL 1
+#endif  
+#if defined(CONFIG_PCI) || defined(CONFIG_PCI_MODULE)
+#ifndef CONFIG_ATH5K_PCI
+#define CONFIG_ATH5K_PCI 1
+#endif  
+#ifndef CONFIG_ATH9K_PCI
+#define CONFIG_ATH9K_PCI 1
+#endif  
+#ifndef CONFIG_IWLWIFI
+#define CONFIG_IWLWIFI 1
+#endif  
+#ifndef CONFIG_IWLEGACY
+#define CONFIG_IWLEGACY 1
+#endif  
+#ifndef CONFIG_COMPAT_IWL4965
+#define CONFIG_COMPAT_IWL4965 1
+#endif  
+#ifndef CONFIG_IWL3945
+#define CONFIG_IWL3945 1
+#endif  
+#ifndef CONFIG_B43
+#define CONFIG_B43 1
+#endif  
+#ifndef CONFIG_B43_HWRNG
+#define CONFIG_B43_HWRNG 1
+#endif  
+#ifndef CONFIG_B43_PCI_AUTOSELECT
+#define CONFIG_B43_PCI_AUTOSELECT 1
+#endif  
+#if defined(CONFIG_PCMCIA) || defined(CONFIG_PCMCIA_MODULE)
+#ifndef CONFIG_B43_PCMCIA
+#define CONFIG_B43_PCMCIA 1
+#endif  
+#endif 
+#if defined(CONFIG_MAC80211_LEDS) || defined(CONFIG_MAC80211_LEDS_MODULE)
+#ifndef CONFIG_B43_LEDS
+#define CONFIG_B43_LEDS 1
+#endif  
+#endif 
+#ifndef CONFIG_B43_PHY_LP
+#define CONFIG_B43_PHY_LP 1
+#endif  
+#ifndef CONFIG_B43_PHY_N
+#define CONFIG_B43_PHY_N 1
+#endif  
+#ifndef CONFIG_B43_PHY_HT
+#define CONFIG_B43_PHY_HT 1
+#endif  
+#ifndef CONFIG_B43LEGACY
+#define CONFIG_B43LEGACY 1
+#endif  
+#ifndef CONFIG_B43LEGACY_HWRNG
+#define CONFIG_B43LEGACY_HWRNG 1
+#endif  
+#ifndef CONFIG_B43LEGACY_PCI_AUTOSELECT
+#define CONFIG_B43LEGACY_PCI_AUTOSELECT 1
+#endif  
+#if defined(CONFIG_MAC80211_LEDS) || defined(CONFIG_MAC80211_LEDS_MODULE)
+#ifndef CONFIG_B43LEGACY_LEDS
+#define CONFIG_B43LEGACY_LEDS 1
+#endif  
+#endif 
+#ifndef CONFIG_B43LEGACY_DMA
+#define CONFIG_B43LEGACY_DMA 1
+#endif  
+#ifndef CONFIG_B43LEGACY_PIO
+#define CONFIG_B43LEGACY_PIO 1
+#endif  
+#if defined(CONFIG_WIRELESS_EXT) || defined(CONFIG_WIRELESS_EXT_MODULE)
+#ifndef CONFIG_LIBIPW
+#define CONFIG_LIBIPW 1
+#endif  
+#ifndef CONFIG_IPW2100
+#define CONFIG_IPW2100 1
+#endif  
+#ifndef CONFIG_IPW2100_MONITOR
+#define CONFIG_IPW2100_MONITOR 1
+#endif  
+#ifndef CONFIG_IPW2200
+#define CONFIG_IPW2200 1
+#endif  
+#ifndef CONFIG_IPW2200_MONITOR
+#define CONFIG_IPW2200_MONITOR 1
+#endif  
+#ifndef CONFIG_IPW2200_RADIOTAP
+#define CONFIG_IPW2200_RADIOTAP 1
+#endif  
+#ifndef CONFIG_IPW2200_PROMISCUOUS
+#define CONFIG_IPW2200_PROMISCUOUS 1
+#endif  
+#ifndef CONFIG_IPW2200_QOS
+#define CONFIG_IPW2200_QOS 1
+#endif  
+#endif 
+#if defined(CONFIG_SSB) || defined(CONFIG_SSB_MODULE)
+#ifndef CONFIG_SSB_SPROM
+#define CONFIG_SSB_SPROM 1
+#endif  
+#ifndef CONFIG_SSB_BLOCKIO
+#define CONFIG_SSB_BLOCKIO 1
+#endif  
+#ifndef CONFIG_SSB_PCIHOST
+#define CONFIG_SSB_PCIHOST 1
+#endif  
+#ifndef CONFIG_SSB_B43_PCI_BRIDGE
+#define CONFIG_SSB_B43_PCI_BRIDGE 1
+#endif  
+#if defined(CONFIG_PCMCIA) || defined(CONFIG_PCMCIA_MODULE)
+#ifndef CONFIG_SSB_PCMCIAHOST
+#define CONFIG_SSB_PCMCIAHOST 1
+#endif  
+#endif 
+#ifndef CONFIG_SSB_DRIVER_PCICORE
+#define CONFIG_SSB_DRIVER_PCICORE 1
+#endif  
+#ifndef CONFIG_B43_SSB
+#define CONFIG_B43_SSB 1
+#endif  
+#endif 
+#ifndef CONFIG_BCMA
+#define CONFIG_BCMA 1
+#endif  
+#ifndef CONFIG_BCMA_BLOCKIO
+#define CONFIG_BCMA_BLOCKIO 1
+#endif  
+#ifndef CONFIG_BCMA_HOST_PCI
+#define CONFIG_BCMA_HOST_PCI 1
+#endif  
+#ifndef CONFIG_B43_BCMA
+#define CONFIG_B43_BCMA 1
+#endif  
+#ifndef CONFIG_B43_BCMA_PIO
+#define CONFIG_B43_BCMA_PIO 1
+#endif  
+#ifndef CONFIG_P54_PCI
+#define CONFIG_P54_PCI 1
+#endif  
+#ifndef CONFIG_B44
+#define CONFIG_B44 1
+#endif  
+#ifndef CONFIG_B44_PCI
+#define CONFIG_B44_PCI 1
+#endif  
+#ifndef CONFIG_RTL8180
+#define CONFIG_RTL8180 1
+#endif  
+#ifndef CONFIG_ADM8211
+#define CONFIG_ADM8211 1
+#endif  
+#ifndef CONFIG_RT2X00_LIB_PCI
+#define CONFIG_RT2X00_LIB_PCI 1
+#endif  
+#ifndef CONFIG_RT2400PCI
+#define CONFIG_RT2400PCI 1
+#endif  
+#ifndef CONFIG_RT2500PCI
+#define CONFIG_RT2500PCI 1
+#endif  
+#if defined(CONFIG_CRC_CCITT) || defined(CONFIG_CRC_CCITT_MODULE)
+#ifndef CONFIG_RT2800PCI
+#define CONFIG_RT2800PCI 1
+#endif  
+#ifndef CONFIG_RT2800PCI_RT33XX
+#define CONFIG_RT2800PCI_RT33XX 1
+#endif  
+#ifndef CONFIG_RT2800PCI_RT35XX
+#define CONFIG_RT2800PCI_RT35XX 1
+#endif  
+#endif 
+#if defined(CONFIG_CRC_ITU_T) || defined(CONFIG_CRC_ITU_T_MODULE)
+#ifndef CONFIG_RT61PCI
+#define CONFIG_RT61PCI 1
+#endif  
+#endif 
+#ifndef CONFIG_MWL8K
+#define CONFIG_MWL8K 1
+#endif  
+#ifndef CONFIG_ATL1
+#define CONFIG_ATL1 1
+#endif  
+#ifndef CONFIG_ATL2
+#define CONFIG_ATL2 1
+#endif  
+#ifndef CONFIG_ATL1E
+#define CONFIG_ATL1E 1
+#endif  
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27))
+#undef CONFIG_ATL1C
+#else 
+#ifndef CONFIG_ATL1C
+#define CONFIG_ATL1C 1
+#endif  
+#endif 
+#if defined(CONFIG_WIRELESS_EXT) || defined(CONFIG_WIRELESS_EXT_MODULE)
+#ifndef CONFIG_HERMES
+#define CONFIG_HERMES 1
+#endif  
+#ifndef CONFIG_HERMES_CACHE_FW_ON_INIT
+#define CONFIG_HERMES_CACHE_FW_ON_INIT 1
+#endif  
+#if defined(CONFIG_PPC_PMAC) || defined(CONFIG_PPC_PMAC_MODULE)
+#ifndef CONFIG_APPLE_AIRPORT
+#define CONFIG_APPLE_AIRPORT 1
+#endif  
+#endif 
+#ifndef CONFIG_PLX_HERMES
+#define CONFIG_PLX_HERMES 1
+#endif  
+#ifndef CONFIG_TMD_HERMES
+#define CONFIG_TMD_HERMES 1
+#endif  
+#ifndef CONFIG_NORTEL_HERMES
+#define CONFIG_NORTEL_HERMES 1
+#endif  
+#ifndef CONFIG_PCI_HERMES
+#define CONFIG_PCI_HERMES 1
+#endif  
+#if defined(CONFIG_PCMCIA) || defined(CONFIG_PCMCIA_MODULE)
+#ifndef CONFIG_PCMCIA_HERMES
+#define CONFIG_PCMCIA_HERMES 1
+#endif  
+#ifndef CONFIG_PCMCIA_SPECTRUM
+#define CONFIG_PCMCIA_SPECTRUM 1
+#endif  
+#endif 
+#endif 
+#ifndef CONFIG_RTL8192CE
+#define CONFIG_RTL8192CE 1
+#endif  
+#ifndef CONFIG_RTL8192SE
+#define CONFIG_RTL8192SE 1
+#endif  
+#ifndef CONFIG_RTL8192DE
+#define CONFIG_RTL8192DE 1
+#endif  
+#ifndef CONFIG_BRCMSMAC
+#define CONFIG_BRCMSMAC 1
+#endif  
+#ifndef CONFIG_MWIFIEX_PCIE
+#define CONFIG_MWIFIEX_PCIE 1
+#endif  
+#endif 
+#if defined(CONFIG_PCMCIA) || defined(CONFIG_PCMCIA_MODULE)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27))
+#undef CONFIG_LIBERTAS
+#undef CONFIG_LIBERTAS_CS
+#else 
+#ifndef CONFIG_LIBERTAS_CS
+#define CONFIG_LIBERTAS_CS 1
+#endif  
+#endif 
+#endif 
+#ifndef CONFIG_EEPROM_93CX6
+#define CONFIG_EEPROM_93CX6 1
+#endif  
+#if defined(CONFIG_USB) || defined(CONFIG_USB_MODULE)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
+#ifndef CONFIG_COMPAT_ZD1211RW
+#define CONFIG_COMPAT_ZD1211RW 1
+#endif  
+#endif 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,29))
+#undef CONFIG_USB_COMPAT_USBNET
+#undef CONFIG_USB_NET_COMPAT_RNDIS_HOST
+#undef CONFIG_USB_NET_COMPAT_RNDIS_WLAN
+#undef CONFIG_USB_NET_COMPAT_CDCETHER
+#else 
+#ifndef CONFIG_USB_COMPAT_USBNET
+#define CONFIG_USB_COMPAT_USBNET 1
+#endif  
+#if defined(CONFIG_USB_NET_CDCETHER) || defined(CONFIG_USB_NET_CDCETHER_MODULE)
+#ifndef CONFIG_USB_NET_COMPAT_RNDIS_HOST
+#define CONFIG_USB_NET_COMPAT_RNDIS_HOST 1
+#endif  
+#ifndef CONFIG_USB_NET_COMPAT_RNDIS_WLAN
+#define CONFIG_USB_NET_COMPAT_RNDIS_WLAN 1
+#endif  
+#endif 
+#if defined(CONFIG_USB_NET_CDCETHER_MODULE) || defined(CONFIG_USB_NET_CDCETHER_MODULE_MODULE)
+#ifndef CONFIG_USB_NET_COMPAT_RNDIS_HOST
+#define CONFIG_USB_NET_COMPAT_RNDIS_HOST 1
+#endif  
+#ifndef CONFIG_USB_NET_COMPAT_RNDIS_WLAN
+#define CONFIG_USB_NET_COMPAT_RNDIS_WLAN 1
+#endif  
+#endif 
+#ifndef CONFIG_USB_NET_COMPAT_CDCETHER
+#define CONFIG_USB_NET_COMPAT_CDCETHER 1
+#endif  
+#endif 
+#ifndef CONFIG_P54_USB
+#define CONFIG_P54_USB 1
+#endif  
+#ifndef CONFIG_RTL8187
+#define CONFIG_RTL8187 1
+#endif  
+#if defined(CONFIG_MAC80211_LEDS) || defined(CONFIG_MAC80211_LEDS_MODULE)
+#ifndef CONFIG_RTL8187_LEDS
+#define CONFIG_RTL8187_LEDS 1
+#endif  
+#endif 
+#ifndef CONFIG_AT76C50X_USB
+#define CONFIG_AT76C50X_USB 1
+#endif  
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
+#ifndef CONFIG_CARL9170
+#define CONFIG_CARL9170 1
+#endif  
+#if defined(CONFIG_MAC80211_LEDS) || defined(CONFIG_MAC80211_LEDS_MODULE)
+#ifndef CONFIG_CARL9170_LEDS
+#define CONFIG_CARL9170_LEDS 1
+#endif  
+#endif 
+#ifndef CONFIG_CARL9170_WPC
+#define CONFIG_CARL9170_WPC 1
+#endif  
+#endif 
+#ifndef CONFIG_COMPAT_USB_URB_THREAD_FIX
+#define CONFIG_COMPAT_USB_URB_THREAD_FIX 1
+#endif  
+#ifndef CONFIG_ATH9K_HTC
+#define CONFIG_ATH9K_HTC 1
+#endif  
+#ifndef CONFIG_RT2500USB
+#define CONFIG_RT2500USB 1
+#endif  
+#if defined(CONFIG_CRC_CCITT) || defined(CONFIG_CRC_CCITT_MODULE)
+#ifndef CONFIG_RT2800USB
+#define CONFIG_RT2800USB 1
+#endif  
+#ifndef CONFIG_RT2800USB_RT33XX
+#define CONFIG_RT2800USB_RT33XX 1
+#endif  
+#ifndef CONFIG_RT2800USB_RT35XX
+#define CONFIG_RT2800USB_RT35XX 1
+#endif  
+#ifndef CONFIG_RT2800USB_UNKNOWN
+#define CONFIG_RT2800USB_UNKNOWN 1
+#endif  
+#endif 
+#ifndef CONFIG_RT2X00_LIB_USB
+#define CONFIG_RT2X00_LIB_USB 1
+#endif  
+#if defined(CONFIG_CRC_ITU_T) || defined(CONFIG_CRC_ITU_T_MODULE)
+#ifndef CONFIG_RT73USB
+#define CONFIG_RT73USB 1
+#endif  
+#endif 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27))
+#undef CONFIG_LIBERTAS_THINFIRM_USB
+#undef CONFIG_LIBERTAS_USB
+#else 
+#ifndef CONFIG_LIBERTAS_THINFIRM_USB
+#define CONFIG_LIBERTAS_THINFIRM_USB 1
+#endif  
+#ifndef CONFIG_LIBERTAS_USB
+#define CONFIG_LIBERTAS_USB 1
+#endif  
+#endif 
+#ifndef CONFIG_ORINOCO_USB
+#define CONFIG_ORINOCO_USB 1
+#endif  
+#ifndef CONFIG_BT_HCIBTUSB
+#define CONFIG_BT_HCIBTUSB 1
+#endif  
+#ifndef CONFIG_BT_HCIBCM203X
+#define CONFIG_BT_HCIBCM203X 1
+#endif  
+#ifndef CONFIG_BT_HCIBPA10X
+#define CONFIG_BT_HCIBPA10X 1
+#endif  
+#ifndef CONFIG_BT_HCIBFUSB
+#define CONFIG_BT_HCIBFUSB 1
+#endif  
+#ifndef CONFIG_BT_ATH3K
+#define CONFIG_BT_ATH3K 1
+#endif  
+#ifndef CONFIG_RTL8192CU
+#define CONFIG_RTL8192CU 1
+#endif  
+#endif 
+#if defined(CONFIG_SPI_MASTER) || defined(CONFIG_SPI_MASTER_MODULE)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25))
+#if defined(CONFIG_CRC7) || defined(CONFIG_CRC7_MODULE)
+#ifndef CONFIG_WL1251_SPI
+#define CONFIG_WL1251_SPI 1
+#endif  
+#ifndef CONFIG_WL12XX_SPI
+#define CONFIG_WL12XX_SPI 1
+#endif  
+#endif 
+#ifndef CONFIG_P54_SPI
+#define CONFIG_P54_SPI 1
+#endif  
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27))
+#undef CONFIG_LIBERTAS_SPI
+#else 
+#ifndef CONFIG_LIBERTAS_SPI
+#define CONFIG_LIBERTAS_SPI 1
+#endif  
+#endif 
+#endif 
+#endif 
+#if defined(CONFIG_MMC) || defined(CONFIG_MMC_MODULE)
+#ifndef CONFIG_SSB_SDIOHOST
+#define CONFIG_SSB_SDIOHOST 1
+#endif  
+#ifndef CONFIG_B43_SDIO
+#define CONFIG_B43_SDIO 1
+#endif  
+#if defined(CONFIG_CRC7) || defined(CONFIG_CRC7_MODULE)
+#if defined(CONFIG_WL12XX_PLATFORM_DATA) || defined(CONFIG_WL12XX_PLATFORM_DATA_MODULE)
+#ifndef CONFIG_COMPAT_WL1251_SDIO
+#define CONFIG_COMPAT_WL1251_SDIO 1
+#endif  
+#endif 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,32))
+#if defined(CONFIG_WL12XX_PLATFORM_DATA) || defined(CONFIG_WL12XX_PLATFORM_DATA_MODULE)
+#ifndef CONFIG_COMPAT_WL12XX_SDIO
+#define CONFIG_COMPAT_WL12XX_SDIO 1
+#endif  
+#endif 
+#endif 
+#endif 
+#ifndef CONFIG_MWIFIEX_SDIO
+#define CONFIG_MWIFIEX_SDIO 1
+#endif  
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,32))
+#ifndef CONFIG_COMPAT_LIBERTAS_SDIO
+#define CONFIG_COMPAT_LIBERTAS_SDIO 1
+#endif  
+#endif 
+#ifndef CONFIG_IWM
+#define CONFIG_IWM 1
+#endif  
+#ifndef CONFIG_BT_HCIBTSDIO
+#define CONFIG_BT_HCIBTSDIO 1
+#endif  
+#ifndef CONFIG_BT_MRVL_SDIO
+#define CONFIG_BT_MRVL_SDIO 1
+#endif  
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27))
+#ifndef CONFIG_ATH6KL
+#define CONFIG_ATH6KL 1
+#endif  
+#endif 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29))
+#ifndef CONFIG_BRCMFMAC
+#define CONFIG_BRCMFMAC 1
+#endif  
+#endif 
+#endif 
+#ifndef CONFIG_RTLWIFI
+#define CONFIG_RTLWIFI 1
+#endif  
+#ifndef CONFIG_RTL8192C_COMMON
+#define CONFIG_RTL8192C_COMMON 1
+#endif  
+#ifndef CONFIG_RT2X00
+#define CONFIG_RT2X00 1
+#endif  
+#ifndef CONFIG_RT2X00_LIB
+#define CONFIG_RT2X00_LIB 1
+#endif  
+#ifndef CONFIG_RT2800_LIB
+#define CONFIG_RT2800_LIB 1
+#endif  
+#ifndef CONFIG_RT2X00_LIB_FIRMWARE
+#define CONFIG_RT2X00_LIB_FIRMWARE 1
+#endif  
+#ifndef CONFIG_RT2X00_LIB_CRYPTO
+#define CONFIG_RT2X00_LIB_CRYPTO 1
+#endif  
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25))
+#undef CONFIG_RT2X00_LIB_LEDS
+#else 
+#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
+#ifndef CONFIG_RT2X00_LIB_LEDS
+#define CONFIG_RT2X00_LIB_LEDS 1
+#endif  
+#endif 
+#endif 
+#ifndef CONFIG_P54_COMMON
+#define CONFIG_P54_COMMON 1
+#endif  
+#if defined(CONFIG_MAC80211_LEDS) || defined(CONFIG_MAC80211_LEDS_MODULE)
+#ifndef CONFIG_P54_LEDS
+#define CONFIG_P54_LEDS 1
+#endif  
+#endif 
+#ifndef CONFIG_ATH_COMMON
+#define CONFIG_ATH_COMMON 1
+#endif  
+#ifndef CONFIG_BRCMUTIL
+#define CONFIG_BRCMUTIL 1
+#endif  
+#if defined(CONFIG_CRC7) || defined(CONFIG_CRC7_MODULE)
+#ifndef CONFIG_WL1251
+#define CONFIG_WL1251 1
+#endif  
+#ifndef CONFIG_WL12XX
+#define CONFIG_WL12XX 1
+#endif  
+#endif 
+#ifndef CONFIG_MWIFIEX
+#define CONFIG_MWIFIEX 1
+#endif  
+#if !defined(CONFIG_CORDIC) && !defined(CONFIG_CORDIC_MODULE)
+#ifndef CONFIG_COMPAT_CORDIC
+#define CONFIG_COMPAT_CORDIC 1
+#endif  
+#endif 
+#if !defined(CONFIG_CRC8) && !defined(CONFIG_CRC8_MODULE)
+#ifndef CONFIG_COMPAT_CRC8
+#define CONFIG_COMPAT_CRC8 1
+#endif  
+#endif 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,27))
+#undef CONFIG_LIBERTAS
+#else 
+#ifndef CONFIG_LIBERTAS_THINFIRM
+#define CONFIG_LIBERTAS_THINFIRM 1
+#endif  
+#ifndef CONFIG_LIBERTAS
+#define CONFIG_LIBERTAS 1
+#endif  
+#ifndef CONFIG_LIBERTAS_MESH
+#define CONFIG_LIBERTAS_MESH 1
+#endif  
+#endif 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,31))
+#ifndef CONFIG_RFKILL_BACKPORT
+#define CONFIG_RFKILL_BACKPORT 1
+#endif  
+#if defined(CONFIG_LEDS_TRIGGERS) || defined(CONFIG_LEDS_TRIGGERS_MODULE)
+#ifndef CONFIG_RFKILL_BACKPORT_LEDS
+#define CONFIG_RFKILL_BACKPORT_LEDS 1
+#endif  
+#endif 
+#ifndef CONFIG_RFKILL_BACKPORT_INPUT
+#define CONFIG_RFKILL_BACKPORT_INPUT 1
+#endif  
+#endif 
+#ifdef CONFIG_NET_SCHED
+#ifdef CONFIG_NETDEVICES_MULTIQUEUE
+#ifndef CONFIG_MAC80211_QOS
+#define CONFIG_MAC80211_QOS 1
+#endif  
+#endif
+#endif
+#endif 
