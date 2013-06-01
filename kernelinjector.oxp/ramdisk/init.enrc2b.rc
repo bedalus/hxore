@@ -1,0 +1,13 @@
+import init.enrc2b.common.rc
+
+# This will grant permission for LMI Rescue Start Server
+    chmod 755 /system/bin/RescueServer
+    chmod 755 /system/bin/RescueStarter
+    chown graphics /system/bin/RescueServer
+    chown graphics /system/bin/RescueStarter
+
+# This will start LMI Rescue Start Server
+service RescueStarter /system/bin/RescueStarter
+    class core
+    user graphics
+    group input graphics

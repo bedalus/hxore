@@ -39,6 +39,7 @@
 #include "pm.h"
 #include "cpu-tegra.h"
 #include "clock.h"
+#include "hxore.h"
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
@@ -52,7 +53,9 @@
 /* Control flags */
 unsigned char flags;
 #define EARLYSUSPEND_ACTIVE	(1 << 3)
-static int cpusallowed = 2;
+
+int cpusallowed = 0; //setting to 0 makes auto-hotplugging default
+bool camera_hook = false;
 
 static struct mutex *tegra3_cpu_lock;
 
@@ -762,13 +765,34 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 
 	if (system_state > SYSTEM_RUNNING) {
 		CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " system is not running\n");
-	} else if (cpu < nr_cpu_ids) {
-		if (up) {
-			if ((num_online_cpus() < cpusallowed) && (!(flags & EARLYSUSPEND_ACTIVE)))
-				cpu_up(cpu);
-		} else {
-			if ((num_online_cpus() > cpusallowed) || (flags & EARLYSUSPEND_ACTIVE))
+	} else if (cpu < nr_cpu_ids)
+	{
+		// If cpusallowed has been set to 0, allow automatic hotplugging
+		if (cpusallowed == 0)
+		{
+			if (up)
+			{
+				if (!(flags & EARLYSUSPEND_ACTIVE))
+					cpu_up(cpu);
+			} else
+			{
 				cpu_down(cpu);
+			}
+		} else
+		{
+			if (up)
+			{
+				//otherwise fix the number of cores
+				if ((num_online_cpus() < cpusallowed) && (!(flags & EARLYSUSPEND_ACTIVE)))
+					cpu_up(cpu);
+				if ((num_online_cpus() < 2) && (camera_hook))
+					cpu_up(cpu);
+			} else 
+			{
+				if (((num_online_cpus() > cpusallowed) && (!camera_hook))
+					|| (flags & EARLYSUSPEND_ACTIVE))
+					cpu_down(cpu);
+			}
 		}
 	}
 }
@@ -1427,7 +1451,7 @@ static ssize_t cpusallowed_status_read(struct device *dev, struct device_attribu
 	int available_cpus = sprintf(buf,"%u\n", cpusallowed);
 
 	if (available_cpus > 4) available_cpus = 4;
-	if (available_cpus < 1) available_cpus = 1;
+	if (available_cpus < 0) available_cpus = 0;	
 	return available_cpus;
 }
 
