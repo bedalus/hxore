@@ -164,7 +164,7 @@ static int cpufreq_governor_smartmax(struct cpufreq_policy *policy,
 static
 #endif
 struct cpufreq_governor cpufreq_gov_smartass2 = { .name = "smartmax", .governor =
-		cpufreq_governor_smartmax, .max_transition_latency = 10000000, .owner =
+		cpufreq_governor_smartmax, .max_transition_latency = (300 * 1000), .owner =
 		THIS_MODULE , };
 
 static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,

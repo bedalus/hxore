@@ -574,7 +574,7 @@ config TEGRA_CBUS_CLOCK_DIVIDER
         int "CBUS clock divider"
         default "2"
 
-config TEGRA_CONVSERVATIVE_GOV_ON_EARLYSUPSEND
+config TEGRA_CONSERVATIVE_GOV_ON_EARLY_SUPSEND
 	bool "Use conservative cpu frequency governor when device enters early suspend"
 	depends on HAS_EARLYSUSPEND && CPU_FREQ
 	default n
