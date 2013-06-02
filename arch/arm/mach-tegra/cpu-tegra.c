@@ -2132,19 +2132,23 @@ static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
 	void *dummy)
 {
 	int cpu;
-	if (event == PM_SUSPEND_PREPARE) {
+	if (event == PM_SUSPEND_PREPARE)
+	{
 		mutex_lock(&tegra_cpu_lock);
 		is_suspended = true;
-		//tegra_update_cpu_speed(CAP_CPU_FREQ_MAX);
-		//tegra_auto_hotplug_governor(
-		//	CAP_CPU_FREQ_MAX, true);
-		mutex_unlock(&tegra_cpu_lock);
-		for_each_online_cpu(cpu) {
+		for_each_online_cpu(cpu)
+		{
 			if(cpu==0)
+			{
+				tegra_update_cpu_speed(CAP_CPU_FREQ_MAX);
+				tegra_auto_hotplug_governor(CAP_CPU_FREQ_MAX, true);
+				mutex_unlock(&tegra_cpu_lock);
 				continue;
+			}
 			cpu_down(cpu);
 		}
-	} else if (event == PM_POST_SUSPEND) {
+	} else if (event == PM_POST_SUSPEND)
+	{
 		unsigned int freq;
 		mutex_lock(&tegra_cpu_lock);
 		is_suspended = false;
@@ -2161,7 +2165,6 @@ static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
 		//	freq);
 		mutex_unlock(&tegra_cpu_lock);
 	}
-
 	return NOTIFY_OK;
 }
 
