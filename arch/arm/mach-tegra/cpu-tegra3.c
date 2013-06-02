@@ -636,7 +636,7 @@ static noinline int tegra_cpu_speed_balance(void)
 	unsigned long skewed_speed = balanced_speed / 2;
 	unsigned int nr_cpus = num_online_cpus();
 	unsigned int max_cpus = pm_qos_request(PM_QOS_MAX_ONLINE_CPUS) ? : 4;
-	unsigned int min_cpus = pm_qos_request(PM_QOS_MIN_ONLINE_CPUS);
+	unsigned int min_cpus = pm_qos_request(1);
 	unsigned int avg_nr_run = avg_nr_running();
 	unsigned int nr_run;
 
@@ -694,7 +694,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		if (cpu < nr_cpu_ids) {
 			up = false;
 		} else if (!is_lp_cluster() && !no_lp &&
-			   !pm_qos_request(PM_QOS_MIN_ONLINE_CPUS) &&
+			   !pm_qos_request(1) &&
 			   ((now - last_change_time) >= down_delay) &&
 			   (flags & EARLYSUSPEND_ACTIVE)) {
 			if(!clk_set_parent(cpu_clk, cpu_lp_clk)) {
@@ -845,7 +845,7 @@ void bthp_auto_hotplug_work_func (
 
     /* final chance to turn around to bring required cores up */
     if (!cpu_num_catchup &&
-        num_online_cpus () < pm_qos_request (PM_QOS_MIN_ONLINE_CPUS) &&
+        num_online_cpus () < pm_qos_request (1) &&
         hp_state != TEGRA_HP_DISABLED)
     {
         cpu_num_catchup = true;
@@ -858,7 +858,7 @@ void bthp_auto_hotplug_work_func (
             system_state <= SYSTEM_RUNNING)
         {
             int num_cores_to_online =
-                pm_qos_request (PM_QOS_MIN_ONLINE_CPUS) -
+                pm_qos_request (1) -
                 num_online_cpus ();
             unsigned int hp_stat_cpu;
             struct cpumask awake_cores = { CPU_BITS_NONE };
@@ -1176,7 +1176,7 @@ void tegra_auto_hotplug_governor(unsigned int cpu_freq, bool suspend)
 #endif
 	}
 
-	if (pm_qos_request(PM_QOS_MIN_ONLINE_CPUS) >= 2) {
+	if (pm_qos_request(1) >= 2) {
 		if (hp_state != TEGRA_HP_UP) {
 			hp_state = TEGRA_HP_UP;
 			queue_delayed_work(
@@ -1263,7 +1263,7 @@ int tegra_auto_hotplug_init(struct mutex *cpu_lock)
 	pr_info("Tegra auto-hotplug initialized: %s\n",
 		(hp_state == TEGRA_HP_DISABLED) ? "disabled" : "enabled");
 
-	if (pm_qos_add_notifier(PM_QOS_MIN_ONLINE_CPUS, &min_cpus_notifier))
+	if (pm_qos_add_notifier(1, &min_cpus_notifier))
 		pr_err("%s: Failed to register min cpus PM QoS notifier\n",
 			__func__);
 
@@ -1349,7 +1349,7 @@ DEFINE_SIMPLE_ATTRIBUTE(rt_bias_fops, rt_bias_get, rt_bias_set, "%llu\n");
 
 static int min_cpus_get(void *data, u64 *val)
 {
-	*val = pm_qos_request(PM_QOS_MIN_ONLINE_CPUS);
+	*val = pm_qos_request(1);
 	return 0;
 }
 static int min_cpus_set(void *data, u64 val)
@@ -1358,7 +1358,7 @@ static int min_cpus_set(void *data, u64 val)
 
 #if defined(CONFIG_BEST_TRADE_HOTPLUG)
     if (likely(bthp_en) &&
-        num_online_cpus() < pm_qos_request(PM_QOS_MIN_ONLINE_CPUS))
+        num_online_cpus() < pm_qos_request(1))
     {
         if (!bthp_cpu_num_catchup())
             CPU_DEBUG_PRINTK(CPU_DEBUG_BTHP,
@@ -1513,7 +1513,7 @@ static int __init tegra_auto_hotplug_debug_init(void)
 	if (!hp_debugfs_root)
 		return -ENOMEM;
 
-	pm_qos_add_request(&min_cpu_req, PM_QOS_MIN_ONLINE_CPUS,
+	pm_qos_add_request(&min_cpu_req, 1,
 			   PM_QOS_DEFAULT_VALUE);
 	pm_qos_add_request(&max_cpu_req, PM_QOS_MAX_ONLINE_CPUS,
 			   PM_QOS_DEFAULT_VALUE);
