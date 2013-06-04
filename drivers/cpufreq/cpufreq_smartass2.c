@@ -38,6 +38,7 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
+#include "../../arch/arm/mach-tegra/hxore.h"
 
 /******************** Tunable parameters: ********************/
 
@@ -210,11 +211,18 @@ static inline cputime64_t get_cpu_iowait_time(unsigned int cpu,
 
 inline static void smartmax_update_min_max(
 		struct smartmax_info_s *this_smartmax, struct cpufreq_policy *policy) {
+	if (early_suspend_hook) 
+		ideal_freq = 102000;
+	else {
+		if (num_online_cpus() != 1) 
+			ideal_freq = DEFAULT_IDEAL_FREQ;
+		else
+			ideal_freq = (DEFAULT_IDEAL_FREQ + 100000);
+	}
 	this_smartmax->ideal_speed = // ideal_freq; but make sure it obeys the policy min/max
 			policy->min < ideal_freq ?
 					(ideal_freq < policy->max ? ideal_freq : policy->max) :
 					policy->min;
-
 }
 
 inline static void smartmax_update_min_max_allcpus(void) {
@@ -379,13 +387,23 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 	// Scale up if load is above max or if there where no idle cycles since coming out of idle,
 	// additionally, if we are at or above the ideal_speed, verify we have been at this frequency
 	// for at least up_rate:
-	if (debug_load > (max_cpu_load - (2*num_online_cpus())) && cur < policy->max
+	int min_load_adjust, cpus_online;
+
+	cpus_online = num_online_cpus();
+	min_load_adjust = min_cpu_load;
+
+	if (cpus_online == 1)
+		min_load_adjust -= (int)(2*cur/1000000); 	//when one core is online
+							//make scaling down a little harder
+							//by reducing the min threshold 
+
+	if (debug_load > (max_cpu_load - (2*cpus_online)) && cur < policy->max
 			&& (cur < this_smartmax->ideal_speed
 				|| (now - this_smartmax->freq_change_time) >= up_rate))
 		this_smartmax->ramp_dir = 1;
 	// Similarly for scale down: load should be below min and if we are at or below ideal
 	// frequency we require that we have been at this frequency for at least down_rate:
-	else if (debug_load < min_cpu_load && cur > policy->min
+	else if (debug_load < min_load_adjust && cur > policy->min
 			&& (cur > this_smartmax->ideal_speed
 				|| (now - this_smartmax->freq_change_time) >= down_rate))
 		this_smartmax->ramp_dir = -1;

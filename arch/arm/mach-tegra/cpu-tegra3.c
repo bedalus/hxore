@@ -56,6 +56,7 @@ unsigned char flags;
 
 int cpusallowed = 0; //setting to 0 makes auto-hotplugging default
 bool camera_hook = false;
+bool early_suspend_hook = false; // does cpu_tegra3 tell us that we are early suspended?
 
 static struct mutex *tegra3_cpu_lock;
 
@@ -1488,12 +1489,14 @@ static void auto_hotplug_early_suspend(struct early_suspend *handler)
 {
 	pr_info("auto_hotplug: early suspend handler\n");
 	flags |= EARLYSUSPEND_ACTIVE;
+	early_suspend_hook = true;
 }
 
 static void auto_hotplug_late_resume(struct early_suspend *handler)
 {
 	pr_info("auto_hotplug: late resume handler\n");
 	flags &= ~EARLYSUSPEND_ACTIVE;
+	early_suspend_hook = false;
 }
 
 static struct early_suspend auto_hotplug_suspend = {

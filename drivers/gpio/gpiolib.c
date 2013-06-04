@@ -99,7 +99,7 @@ static int gpio_ensure_requested(struct gpio_desc *desc, unsigned offset)
 	const struct gpio_chip *chip = desc->chip;
 	const int gpio = chip->base + offset;
 
-	if (WARN(test_and_set_bit(FLAG_REQUESTED, &desc->flags) == 0,
+	if ((test_and_set_bit(FLAG_REQUESTED, &desc->flags) == 0, //warning is annoying
 			"autorequest GPIO-%d\n", gpio)) {
 		if (!try_module_get(chip->owner)) {
 			pr_err("GPIO-%d: module can't be gotten \n", gpio);

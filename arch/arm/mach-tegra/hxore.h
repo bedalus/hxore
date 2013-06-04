@@ -21,3 +21,5 @@
 extern int cpusallowed;
 
 extern bool camera_hook;
+
+extern bool early_suspend_hook;
