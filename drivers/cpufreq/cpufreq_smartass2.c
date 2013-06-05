@@ -217,7 +217,7 @@ inline static void smartmax_update_min_max(
 		if (num_online_cpus() != 1) 
 			ideal_freq = DEFAULT_IDEAL_FREQ;
 		else
-			ideal_freq = (DEFAULT_IDEAL_FREQ + 100000);
+			ideal_freq = 1700000;
 	}
 	this_smartmax->ideal_speed = // ideal_freq; but make sure it obeys the policy min/max
 			policy->min < ideal_freq ?
@@ -351,7 +351,7 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 		// ramp up logic:
 		if (old_freq < this_smartmax->ideal_speed)
 			new_freq = this_smartmax->ideal_speed;
-		else if (ramp_up_step) {
+		else if (ramp_up_step && (num_online_cpus() != 1)) {
 			new_freq = old_freq + ramp_up_step;
 			relation = CPUFREQ_RELATION_H;
 		} else {
@@ -393,9 +393,7 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 	min_load_adjust = min_cpu_load;
 
 	if (cpus_online == 1)
-		min_load_adjust -= (int)(2*cur/1000000); 	//when one core is online
-							//make scaling down a little harder
-							//by reducing the min threshold 
+		min_load_adjust = 10;
 
 	if (debug_load > (max_cpu_load - (2*cpus_online)) && cur < policy->max
 			&& (cur < this_smartmax->ideal_speed
