@@ -47,7 +47,7 @@
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define DEFAULT_IDEAL_FREQ 16000000
+#define DEFAULT_IDEAL_FREQ 340000
 static unsigned int ideal_freq;
 
 /*
@@ -62,38 +62,38 @@ static unsigned int ramp_up_step;
  * Freqeuncy delta when ramping down below the ideal freqeuncy.
  * Zero disables and will calculate ramp down according to load heuristic.
  * When above the ideal freqeuncy we always ramp down to the ideal freq.
- */
-#define DEFAULT_RAMP_DOWN_STEP 51000
+ */        
+#define DEFAULT_RAMP_DOWN_STEP 1360000
 static unsigned int ramp_down_step;
 
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 85
+#define DEFAULT_MAX_CPU_LOAD 45
 static unsigned int max_cpu_load;
 
 /*
  * CPU freq will be decreased if measured load < min_cpu_load;
  */
-#define DEFAULT_MIN_CPU_LOAD 45
+#define DEFAULT_MIN_CPU_LOAD 4
 static unsigned int min_cpu_load;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp up.
  * Notice we ignore this when we are below the ideal frequency.
  */
-#define DEFAULT_UP_RATE 20000
+#define DEFAULT_UP_RATE 10000
 static unsigned int up_rate;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  * Notice we ignore this when we are above the ideal frequency.
  */
-#define DEFAULT_DOWN_RATE 40000 // will scale up using current fq.
+#define DEFAULT_DOWN_RATE 40000 
 static unsigned int down_rate;
 
 /* in nsecs */
-#define DEFAULT_SAMPLING_RATE 20000
+#define DEFAULT_SAMPLING_RATE 10000
 static unsigned int sampling_rate;
 
 static unsigned int touch_poke_freq = 1600000;
@@ -102,10 +102,10 @@ static bool touch_poke = true;
 static bool sync_cpu_downscale = false;
 
 /* Consider IO as busy */
-#define DEFAULT_IO_IS_BUSY 0
+#define DEFAULT_IO_IS_BUSY 1
 static unsigned int io_is_busy;
 
-#define DEFAULT_IGNORE_NICE 1
+#define DEFAULT_IGNORE_NICE 0
 static unsigned int ignore_nice;
 
 /*************** End of tunables ***************/
@@ -212,13 +212,10 @@ static inline cputime64_t get_cpu_iowait_time(unsigned int cpu,
 inline static void smartmax_update_min_max(
 		struct smartmax_info_s *this_smartmax, struct cpufreq_policy *policy) {
 	if (early_suspend_hook) 
-		ideal_freq = 102000;
-	else {
-		if (num_online_cpus() != 1) 
-			ideal_freq = DEFAULT_IDEAL_FREQ;
-		else
-			ideal_freq = 1700000;
-	}
+		ideal_freq = 51000;
+	else
+		ideal_freq = DEFAULT_IDEAL_FREQ;
+
 	this_smartmax->ideal_speed = // ideal_freq; but make sure it obeys the policy min/max
 			policy->min < ideal_freq ?
 					(ideal_freq < policy->max ? ideal_freq : policy->max) :
@@ -351,11 +348,8 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 		// ramp up logic:
 		if (old_freq < this_smartmax->ideal_speed)
 			new_freq = this_smartmax->ideal_speed;
-		else if (ramp_up_step && (num_online_cpus() != 1)) {
-			new_freq = old_freq + ramp_up_step;
-			relation = CPUFREQ_RELATION_H;
-		} else {
-			new_freq = policy->max;
+		else if (ramp_up_step) {
+			new_freq = old_freq + 51000;
 			relation = CPUFREQ_RELATION_H;
 		}
 	} else if (ramp_dir < 0) {
@@ -369,7 +363,7 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 			// Load heuristics: Adjust new_freq such that, assuming a linear
 			// scaling of load vs. frequency, the load in the new frequency
 			// will be max_cpu_load:
-			new_freq = old_freq * this_smartmax->cur_cpu_load / (max_cpu_load - (2*num_online_cpus()) );
+			new_freq = old_freq * this_smartmax->cur_cpu_load / max_cpu_load;
 			if (new_freq > old_freq) // min_cpu_load > max_cpu_load ?!
 				new_freq = old_freq - 1;
 		}
@@ -387,15 +381,19 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 	// Scale up if load is above max or if there where no idle cycles since coming out of idle,
 	// additionally, if we are at or above the ideal_speed, verify we have been at this frequency
 	// for at least up_rate:
-	int min_load_adjust, cpus_online;
+	int min_load_adjust, max_load_adjust;
 
-	cpus_online = num_online_cpus();
-	min_load_adjust = min_cpu_load;
+	if (early_suspend_hook)
+	{
+		max_load_adjust = 85;
+		min_load_adjust = 35;
+	} else
+	{
+		max_load_adjust = max_cpu_load;
+		min_load_adjust = min_cpu_load;
+	}
 
-	if (cpus_online == 1)
-		min_load_adjust = 10;
-
-	if (debug_load > (max_cpu_load - (2*cpus_online)) && cur < policy->max
+	if (debug_load > max_load_adjust && cur < policy->max
 			&& (cur < this_smartmax->ideal_speed
 				|| (now - this_smartmax->freq_change_time) >= up_rate))
 		this_smartmax->ramp_dir = 1;

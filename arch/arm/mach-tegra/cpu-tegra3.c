@@ -54,7 +54,7 @@
 unsigned char flags;
 #define EARLYSUSPEND_ACTIVE	(1 << 3)
 
-int cpusallowed = 0; //setting to 0 makes auto-hotplugging default
+int cpusallowed = 3; //setting to 3 to keep heat down during boot
 bool camera_hook = false;
 bool early_suspend_hook = false; // does cpu_tegra3 tell us that we are early suspended?
 static int down_requests = 0; // for cpu_down smoothing
@@ -769,40 +769,30 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " system is not running\n");
 	} else if (cpu < nr_cpu_ids)
 	{
-		// If cpusallowed has been set to 0, allow automatic hotplugging
-		if (cpusallowed == 0)
+		if (up)
 		{
-			if (up)
+			if ((num_online_cpus() < cpusallowed) && (!(flags & EARLYSUSPEND_ACTIVE)))
 			{
-				if (!(flags & EARLYSUSPEND_ACTIVE))
+				down_requests--;
+				if (down_requests == -10) // negative down = up requests! 
 				{
 					cpu_up(cpu);
-					down_requests = 0; // any up request resets the down requests tally
-				}
-			} else
-			{
-				down_requests++;
-				if (down_requests == 3) // it takes three down requests to bring a core down
-				{
-					cpu_down(cpu);
 					down_requests = 0;
 				}
 			}
+			if ((num_online_cpus() < 2) && (!(flags & EARLYSUSPEND_ACTIVE)))
+				cpu_up(cpu);
 		} else
 		{
-			if (up)
+			down_requests++;
+			if (down_requests == 3) // it takes n requests to bring a core down
 			{
-				//otherwise fix the number of cores
-				if ((num_online_cpus() < cpusallowed) && (!(flags & EARLYSUSPEND_ACTIVE)))
-					cpu_up(cpu);
-				if ((num_online_cpus() < 2) && (camera_hook))
-					cpu_up(cpu);
-			} else 
-			{
-				if (((num_online_cpus() > cpusallowed) && (!camera_hook))
-					|| (flags & EARLYSUSPEND_ACTIVE))
+				if (num_online_cpus() > 2)
 					cpu_down(cpu);
+				down_requests = 0;
 			}
+			if (flags & EARLYSUSPEND_ACTIVE)
+				cpu_down(cpu);
 		}
 	}
 }
@@ -1461,7 +1451,7 @@ static ssize_t cpusallowed_status_read(struct device *dev, struct device_attribu
 	int available_cpus = sprintf(buf,"%u\n", cpusallowed);
 
 	if (available_cpus > 4) available_cpus = 4;
-	if (available_cpus < 0) available_cpus = 0;	
+	if (available_cpus < 1) available_cpus = 1;
 	return available_cpus;
 }
 
