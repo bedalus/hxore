@@ -57,6 +57,7 @@ unsigned char flags;
 int cpusallowed = 0; //setting to 0 makes auto-hotplugging default
 bool camera_hook = false;
 bool early_suspend_hook = false; // does cpu_tegra3 tell us that we are early suspended?
+static int down_requests = 0; // for cpu_down smoothing
 
 static struct mutex *tegra3_cpu_lock;
 
@@ -774,10 +775,18 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 			if (up)
 			{
 				if (!(flags & EARLYSUSPEND_ACTIVE))
+				{
 					cpu_up(cpu);
+					down_requests = 0; // any up request resets the down requests tally
+				}
 			} else
 			{
-				cpu_down(cpu);
+				down_requests++;
+				if (down_requests == 3) // it takes three down requests to bring a core down
+				{
+					cpu_down(cpu);
+					down_requests = 0;
+				}
 			}
 		} else
 		{
