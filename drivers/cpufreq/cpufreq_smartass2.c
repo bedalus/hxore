@@ -47,7 +47,7 @@
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define DEFAULT_IDEAL_FREQ 340000
+#define DEFAULT_IDEAL_FREQ 760000 // this seems to be the lowest fq at which everything is smooth enough
 static unsigned int ideal_freq;
 
 /*
@@ -63,26 +63,26 @@ static unsigned int ramp_up_step;
  * Zero disables and will calculate ramp down according to load heuristic.
  * When above the ideal freqeuncy we always ramp down to the ideal freq.
  */        
-#define DEFAULT_RAMP_DOWN_STEP 1360000
+#define DEFAULT_RAMP_DOWN_STEP 51000
 static unsigned int ramp_down_step;
 
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 45
+#define DEFAULT_MAX_CPU_LOAD 75 // 99
 static unsigned int max_cpu_load;
 
 /*
  * CPU freq will be decreased if measured load < min_cpu_load;
  */
-#define DEFAULT_MIN_CPU_LOAD 4
+#define DEFAULT_MIN_CPU_LOAD 22 // 45
 static unsigned int min_cpu_load;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp up.
  * Notice we ignore this when we are below the ideal frequency.
  */
-#define DEFAULT_UP_RATE 10000
+#define DEFAULT_UP_RATE 40000
 static unsigned int up_rate;
 
 /*
@@ -93,11 +93,13 @@ static unsigned int up_rate;
 static unsigned int down_rate;
 
 /* in nsecs */
-#define DEFAULT_SAMPLING_RATE 10000
+#define DEFAULT_SAMPLING_RATE 40000
 static unsigned int sampling_rate;
 
 static unsigned int touch_poke_freq = 1600000;
 static bool touch_poke = true;
+static bool boost_freq = false;
+static int boost_count = 0;
 
 static bool sync_cpu_downscale = false;
 
@@ -211,11 +213,6 @@ static inline cputime64_t get_cpu_iowait_time(unsigned int cpu,
 
 inline static void smartmax_update_min_max(
 		struct smartmax_info_s *this_smartmax, struct cpufreq_policy *policy) {
-	if (early_suspend_hook) 
-		ideal_freq = 51000;
-	else
-		ideal_freq = DEFAULT_IDEAL_FREQ;
-
 	this_smartmax->ideal_speed = // ideal_freq; but make sure it obeys the policy min/max
 			policy->min < ideal_freq ?
 					(ideal_freq < policy->max ? ideal_freq : policy->max) :
@@ -277,8 +274,7 @@ inline static void target_freq(struct cpufreq_policy *policy,
 	if (new_freq == old_freq)
 		return;
 
-	if (table
-			&& !cpufreq_frequency_table_target(policy, table, new_freq,
+	if (table && !cpufreq_frequency_table_target(policy, table, new_freq,
 					prefered_relation, &index)) {
 		target = table[index].frequency;
 		if (target == old_freq) {
@@ -368,6 +364,9 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 				new_freq = old_freq - 1;
 		}
 	}
+
+	if ((new_freq < 1150000) && (boost_count > 0))
+		new_freq = 1150000;
 
 	if (new_freq!=0){
 		target_freq(policy, this_smartmax, new_freq, old_freq, relation);
@@ -484,6 +483,19 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	this_smartmax->cur_cpu_load = debug_load;
 	this_smartmax->old_freq = cur;
 	this_smartmax->ramp_dir = 0;
+
+	if (early_suspend_hook) 
+		ideal_freq = 51000;
+	else
+		ideal_freq = DEFAULT_IDEAL_FREQ;
+
+	if (boost_freq)
+	{
+		if (++boost_count > 2) {
+			boost_count = 0;
+			boost_freq = false;
+		}
+	}
 
 	cpufreq_smartmax_get_ramp_direction(debug_load, cur, this_smartmax, policy, now);
 	// no changes
@@ -804,7 +816,8 @@ static struct attribute_group smartmax_attr_group = { .attrs =
 
 static void dbs_input_event(struct input_handle *handle, unsigned int type,
 		unsigned int code, int value) {
-	return;
+		if (type == EV_SYN && code == SYN_REPORT)
+			boost_freq = true;
 }
 
 static int input_dev_filter(const char* input_dev_name) {
