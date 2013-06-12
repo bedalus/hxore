@@ -47,7 +47,7 @@
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define DEFAULT_IDEAL_FREQ 760000 // this seems to be the lowest fq at which everything is smooth enough
+#define DEFAULT_IDEAL_FREQ 1150000 // this seems to be the lowest fq at which everything is smooth enough
 static unsigned int ideal_freq;
 
 /*
@@ -98,10 +98,6 @@ static unsigned int sampling_rate;
 
 static unsigned int touch_poke_freq = 1600000;
 static bool touch_poke = true;
-static bool boost_freq = false;
-static int boost_count = 0;
-
-static bool sync_cpu_downscale = false;
 
 /* Consider IO as busy */
 #define DEFAULT_IO_IS_BUSY 1
@@ -365,9 +361,6 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 		}
 	}
 
-	if ((new_freq < 1150000) && (boost_count > 0))
-		new_freq = 1150000;
-
 	if (new_freq!=0){
 		target_freq(policy, this_smartmax, new_freq, old_freq, relation);
 	}
@@ -488,14 +481,6 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 		ideal_freq = 51000;
 	else
 		ideal_freq = DEFAULT_IDEAL_FREQ;
-
-	if (boost_freq)
-	{
-		if (++boost_count > 2) {
-			boost_count = 0;
-			boost_freq = false;
-		}
-	}
 
 	cpufreq_smartmax_get_ramp_direction(debug_load, cur, this_smartmax, policy, now);
 	// no changes
@@ -714,28 +699,6 @@ static ssize_t store_touch_poke_freq(struct kobject *a, struct attribute *b,
 	return count;
 }
 
-static ssize_t show_sync_cpu_downscale(struct kobject *kobj,
-		struct attribute *attr, char *buf) {
-	return sprintf(buf, "%d\n", sync_cpu_downscale);
-}
-
-static ssize_t store_sync_cpu_downscale(struct kobject *a, struct attribute *b,
-		const char *buf, size_t count) {
-	ssize_t res;
-	unsigned long input;
-	res = strict_strtoul(buf, 0, &input);
-	if (res >= 0) {
-		if (input == 0)
-			sync_cpu_downscale = false;
-		else if (input == 1)
-			sync_cpu_downscale = true;
-		else
-			return -EINVAL;
-	} else
-		return -EINVAL;
-	return count;
-}
-
 static ssize_t show_io_is_busy(struct kobject *kobj, struct attribute *attr,
 		char *buf) {
 	return sprintf(buf, "%d\n", io_is_busy);
@@ -798,7 +761,6 @@ define_global_rw_attr(max_cpu_load);
 define_global_rw_attr(min_cpu_load);
 define_global_rw_attr(sampling_rate);
 define_global_rw_attr(touch_poke_freq);
-define_global_rw_attr(sync_cpu_downscale);
 define_global_rw_attr(io_is_busy);
 define_global_rw_attr(ignore_nice);
 
@@ -807,8 +769,7 @@ static struct attribute * smartmax_attributes[] = { &debug_mask_attr.attr,
 		&ramp_up_step_attr.attr, &ramp_down_step_attr.attr,
 		&max_cpu_load_attr.attr, &min_cpu_load_attr.attr,
 		&sampling_rate_attr.attr, &touch_poke_freq_attr.attr,
-		&sync_cpu_downscale_attr.attr,
-	    &io_is_busy_attr.attr,
+	    	&io_is_busy_attr.attr,
 		&ignore_nice_attr.attr, NULL , };
 
 static struct attribute_group smartmax_attr_group = { .attrs =
@@ -816,8 +777,7 @@ static struct attribute_group smartmax_attr_group = { .attrs =
 
 static void dbs_input_event(struct input_handle *handle, unsigned int type,
 		unsigned int code, int value) {
-		if (type == EV_SYN && code == SYN_REPORT)
-			boost_freq = true;
+		//if (type == EV_SYN && code == SYN_REPORT)
 }
 
 static int input_dev_filter(const char* input_dev_name) {
