@@ -40,6 +40,8 @@
 #include <linux/kernel_stat.h>
 #include "../../arch/arm/mach-tegra/hxore.h"
 
+static int boost_counter = 0;
+
 /******************** Tunable parameters: ********************/
 
 /*
@@ -47,7 +49,7 @@
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define DEFAULT_IDEAL_FREQ 1150000 // this seems to be the lowest fq at which everything is smooth enough
+#define DEFAULT_IDEAL_FREQ 760000 // this seems to be the lowest fq at which everything is smooth enough
 static unsigned int ideal_freq;
 
 /*
@@ -95,9 +97,6 @@ static unsigned int down_rate;
 /* in nsecs */
 #define DEFAULT_SAMPLING_RATE 40000
 static unsigned int sampling_rate;
-
-static unsigned int touch_poke_freq = 1600000;
-static bool touch_poke = true;
 
 /* Consider IO as busy */
 #define DEFAULT_IO_IS_BUSY 1
@@ -361,6 +360,9 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 		}
 	}
 
+	if ((new_freq < 1150000) && (boost_counter > 0) && !early_suspend_hook)
+		new_freq = 1150000;
+
 	if (new_freq!=0){
 		target_freq(policy, this_smartmax, new_freq, old_freq, relation);
 	}
@@ -478,9 +480,16 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	this_smartmax->ramp_dir = 0;
 
 	if (early_suspend_hook) 
+	{
 		ideal_freq = 51000;
+		boost_counter = 0;
+	}
 	else
 		ideal_freq = DEFAULT_IDEAL_FREQ;
+
+	if (unlikely(boost_counter > 0))
+		if (++boost_counter > 4)
+			boost_counter = 0;
 
 	cpufreq_smartmax_get_ramp_direction(debug_load, cur, this_smartmax, policy, now);
 	// no changes
@@ -677,28 +686,6 @@ static ssize_t store_sampling_rate(struct kobject *kobj, struct attribute *attr,
 	return count;
 }
 
-static ssize_t show_touch_poke_freq(struct kobject *kobj,
-		struct attribute *attr, char *buf) {
-	return sprintf(buf, "%u\n", touch_poke_freq);
-}
-
-static ssize_t store_touch_poke_freq(struct kobject *a, struct attribute *b,
-		const char *buf, size_t count) {
-	ssize_t res;
-	unsigned long input;
-	res = strict_strtoul(buf, 0, &input);
-	if (res >= 0){
-		touch_poke_freq = input;
-	
-		if (touch_poke_freq == 0)
-			touch_poke = false;
-		else
-			touch_poke = true;
-	} else
-		return -EINVAL;	
-	return count;
-}
-
 static ssize_t show_io_is_busy(struct kobject *kobj, struct attribute *attr,
 		char *buf) {
 	return sprintf(buf, "%d\n", io_is_busy);
@@ -760,7 +747,6 @@ define_global_rw_attr(ramp_down_step);
 define_global_rw_attr(max_cpu_load);
 define_global_rw_attr(min_cpu_load);
 define_global_rw_attr(sampling_rate);
-define_global_rw_attr(touch_poke_freq);
 define_global_rw_attr(io_is_busy);
 define_global_rw_attr(ignore_nice);
 
@@ -768,7 +754,7 @@ static struct attribute * smartmax_attributes[] = { &debug_mask_attr.attr,
 		&up_rate_attr.attr, &down_rate_attr.attr, &ideal_freq_attr.attr,
 		&ramp_up_step_attr.attr, &ramp_down_step_attr.attr,
 		&max_cpu_load_attr.attr, &min_cpu_load_attr.attr,
-		&sampling_rate_attr.attr, &touch_poke_freq_attr.attr,
+		&sampling_rate_attr.attr,
 	    	&io_is_busy_attr.attr,
 		&ignore_nice_attr.attr, NULL , };
 
@@ -777,7 +763,8 @@ static struct attribute_group smartmax_attr_group = { .attrs =
 
 static void dbs_input_event(struct input_handle *handle, unsigned int type,
 		unsigned int code, int value) {
-		//if (type == EV_SYN && code == SYN_REPORT)
+		if (type == EV_SYN && code == SYN_REPORT && !early_suspend_hook)
+			boost_counter = 1;
 }
 
 static int input_dev_filter(const char* input_dev_name) {
