@@ -49,7 +49,7 @@ static int boost_counter = 0;
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define DEFAULT_IDEAL_FREQ 760000 // this seems to be the lowest fq at which everything is smooth enough
+#define DEFAULT_IDEAL_FREQ 1150000 // this seems to be the lowest fq at which everything is smooth enough
 static unsigned int ideal_freq;
 
 /*
@@ -341,6 +341,8 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 			new_freq = this_smartmax->ideal_speed;
 		else if (ramp_up_step) {
 			new_freq = old_freq + 51000;
+			if (new_freq > 1300000)
+				new_freq = 1600000; // skip 1.4 and 1.5GHz as they are barely used.
 			relation = CPUFREQ_RELATION_H;
 		}
 	} else if (ramp_dir < 0) {
@@ -360,8 +362,8 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 		}
 	}
 
-	if ((new_freq < 1150000) && (boost_counter > 0) && !early_suspend_hook)
-		new_freq = 1150000;
+	if ((new_freq < 1300000) && (boost_counter > 0) && !early_suspend_hook)
+		new_freq = 1300000;
 
 	if (new_freq!=0){
 		target_freq(policy, this_smartmax, new_freq, old_freq, relation);
@@ -488,7 +490,7 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 		ideal_freq = DEFAULT_IDEAL_FREQ;
 
 	if (unlikely(boost_counter > 0))
-		if (++boost_counter > 4)
+		if (++boost_counter > 3)
 			boost_counter = 0;
 
 	cpufreq_smartmax_get_ramp_direction(debug_load, cur, this_smartmax, policy, now);
