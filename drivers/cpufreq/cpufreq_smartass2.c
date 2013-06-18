@@ -342,7 +342,7 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 		else if (ramp_up_step) {
 			new_freq = old_freq + 51000;
 			if (new_freq > 1300000)
-				new_freq = 1600000; // skip 1.4 and 1.5GHz as they are barely used.
+				new_freq = 1700000; // skip 1.4 and 1.5GHz as they are barely used.
 			relation = CPUFREQ_RELATION_H;
 		}
 	} else if (ramp_dir < 0) {
