@@ -7206,7 +7206,6 @@ static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
 
 void sched_show_task(struct task_struct *p)
 {
-	unsigned long free = 0;
 	unsigned state;
 
 	state = p->state ? __ffs(p->state) + 1 : 0;

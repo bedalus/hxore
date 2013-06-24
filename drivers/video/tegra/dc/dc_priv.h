@@ -208,7 +208,7 @@ static inline unsigned long tegra_dc_readl(struct tegra_dc *dc,
 		WARN(1, "DC is clock-gated.\n");
 
 	ret = readl(dc->base + reg * 4);
-	trace_printk("readl %p=%#08lx\n", dc->base + reg * 4, ret);
+	//trace_printk("readl %p=%#08lx\n", dc->base + reg * 4, ret);
 	return ret;
 }
 
@@ -219,7 +219,7 @@ static inline void tegra_dc_writel(struct tegra_dc *dc, unsigned long val,
 	if (!tegra_is_clk_enabled(dc->clk))
 		WARN(1, "DC is clock-gated.\n");
 
-	trace_printk("writel %p=%#08lx\n", dc->base + reg * 4, val);
+	//trace_printk("writel %p=%#08lx\n", dc->base + reg * 4, val);
 	writel(val, dc->base + reg * 4);
 }
 

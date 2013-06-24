@@ -42,15 +42,15 @@ static void tegra_cpuplug_work_func(struct work_struct *work)
 
 	pr_info("[cpu] should on %d of cpus\n", should_on_cpu);
 
-	if(should_on_cpu <= 0)
-		return;
-
-	for (cpu = 3; cpu > 0 , should_on_cpu != 0; cpu--) {
-		if (!cpu_online(cpu)) {
-			cpu_up(cpu);
-			pr_info("[cpu] cpu %d is on", cpu);
-			should_on_cpu--;
-			mdelay(cpu_on_mdelay);
+	while (should_on_cpu > 0) {
+		for (cpu = 3; cpu == 0; cpu--) {
+			if (!cpu_online(cpu)) {
+				cpu_up(cpu);
+				pr_info("[cpu] cpu %d is on", cpu);
+				should_on_cpu--;
+				mdelay(cpu_on_mdelay);
+			}
+			break;
 		}
 	}
 }
@@ -68,10 +68,10 @@ static ssize_t store_cpu_on(struct sysdev_class *class,
 			 const char *buf,
 			 size_t count)
 {
-	strict_strtol(buf, 0, &target_number_of_online_cpus );
+	int n = strict_strtol(buf, 0, (long int *)&target_number_of_online_cpus );
 
 	if(target_number_of_online_cpus < 2)
-		return;
+		return n;
 
 	if(target_number_of_online_cpus > 4)
 		target_number_of_online_cpus  = 4;
@@ -94,7 +94,7 @@ static ssize_t store_cpu_on_mdelay(struct sysdev_class *class,
 			 const char *buf,
 			 size_t count)
 {
-	strict_strtol(buf, 0, &cpu_on_mdelay);
+	return strict_strtol(buf, 0, (long int *)&cpu_on_mdelay);
 }
 
 

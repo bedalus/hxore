@@ -473,7 +473,7 @@ static u32 utmip_rctrl_val, utmip_tctrl_val;
 static DEFINE_SPINLOCK(utmip_pad_lock);
 static int utmip_pad_count;
 
-int Modem_is_IMC();
+int Modem_is_IMC(void);
 
 static struct tegra_xtal_freq utmip_freq_table[] = {
 	{
@@ -2099,7 +2099,7 @@ static void uhsic_phy_restore_start(struct tegra_usb_phy *phy)
 		pr_info("%s: uhsic remote wakeup detected\n", __func__);
 	} else {
 		if (UHSIC_WALK_PTR_VAL & val)
-			pr_err("%s: PMC remote_wakeup register was set. <%d>", __func__, val);
+			pr_err("%s: PMC remote_wakeup register was set. <%d>", __func__, (int)val);
 
 		if (!((UHSIC_STROBE_VAL_P0 | UHSIC_DATA_VAL_P0) & val)) {
 				uhsic_phy_disable_pmc_bus_ctrl(phy);
@@ -2400,6 +2400,7 @@ int uhsic_phy_remove(struct tegra_usb_phy *phy)
 		phy->phy_clk_on = true;
 		uhsic_phy_disable_pmc_bus_ctrl(phy);
 	}
+	return 0;
 }
 EXPORT_SYMBOL(uhsic_phy_remove);
 

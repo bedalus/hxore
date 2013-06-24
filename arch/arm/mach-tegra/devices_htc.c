@@ -110,7 +110,7 @@ int __init parse_tag_IMEI(const struct tag *tags)
 		}
 	}
 	if (!find) {
-		printk(KERN_ERR "[IMEI] parse_tag_IMEI(): error: IMEI ATAG not found\n", IMEI);
+		//printk(KERN_ERR "[IMEI] parse_tag_IMEI(): error: IMEI ATAG not found\n", IMEI);
 		return -1;
 	}
 	else {

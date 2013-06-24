@@ -68,14 +68,14 @@
 
 #ifdef CONFIG_TEGRA_DC
 static struct regulator *enrc2b_dsi_reg = NULL;
-static bool dsi_regulator_status = 0;
-static struct regulator *enrc2b_lcd_reg = NULL;
+//static bool dsi_regulator_status = 0;
+//static struct regulator *enrc2b_lcd_reg = NULL;
 static struct regulator *v_lcm_3v = NULL;
 static struct regulator *v_lcmio_1v8 = NULL;
 
 static struct regulator *enrc2b_hdmi_reg = NULL;
 static struct regulator *enrc2b_hdmi_pll = NULL;
-static struct regulator *enrc2b_hdmi_vddio = NULL;
+//static struct regulator *enrc2b_hdmi_vddio = NULL;
 #endif
 
 #define LCM_TE		TEGRA_GPIO_PJ1
@@ -180,14 +180,14 @@ static tegra_dc_bl_output enrc2b_bl_output_measured_a03 = {
 	250, 251, 251, 252, 253, 254, 254, 255,
 };
 
-static atomic_t sd_brightness = ATOMIC_INIT(255);
+//static atomic_t sd_brightness = ATOMIC_INIT(255);
 
 /*global varible for work around*/
 static bool g_display_on = true;
 
 static p_tegra_dc_bl_output bl_output;
 
-static bool kernel_1st_panel_init = true;
+//static bool kernel_1st_panel_init = true;
 
 #define BACKLIGHT_MAX 255
 
@@ -227,7 +227,7 @@ static unsigned char shrink_pwm(int val)
 
 static int enrc2b_backlight_notify(struct device *unused, int brightness)
 {
-	int cur_sd_brightness = atomic_read(&sd_brightness);
+//	int cur_sd_brightness = atomic_read(&sd_brightness);
 
 	if (brightness > 0)
 		brightness = shrink_pwm(brightness);
@@ -619,7 +619,7 @@ static u8 init_cmd[] = {0xB9,0xFF,0x83,0x92};
 static u8 eq_cmd[] = {0xD5,0x00,0x00,0x02};
 static u8 ptbf_cmd[] = {0xBF,0x05,0x60,0x02};
 static u8 pwm_freq_hx[] = {0xC9,0x1F,0x01};
-static u8 porch[] = {0x3B,0x03,0x03,0x07,0x02,0x02};
+//static u8 porch[] = {0x3B,0x03,0x03,0x07,0x02,0x02};
 static u8 flash_issue[] = {0xC6,0x35,0x00,0x00,0x04};
 static u8 dsi_set[] = {0xBA,0x11,0x83,0x00,0xD6,0xC6,0x00,0x0A};
 static u8 stba[] = {0xC0,0x01,0x94};
@@ -4183,56 +4183,56 @@ struct early_suspend enrc2b_panel_early_suspender;
 
 static void enrc2b_panel_early_suspend(struct early_suspend *h)
 {
-	MF_DEBUG("00240000");
+	//("00240000");
 	struct backlight_device *bl = platform_get_drvdata(&enrc2b_disp1_backlight_device);
-	MF_DEBUG("00240001");
+	//("00240001");
 
 	DISP_INFO_IN();
 
-	MF_DEBUG("00240002");
+	//("00240002");
 	if (bl && bl->props.bkl_on) {
 		bl->props.bkl_on = 0;
-	MF_DEBUG("00240003");
+	//("00240003");
 		del_timer_sync(&bkl_timer);
-	MF_DEBUG("00240004");
+	//("00240004");
 		flush_workqueue(bkl_wq);
-	MF_DEBUG("00240005");
+	//("00240005");
 	}
 
 	/* power down LCD, add use a black screen for HDMI */
 	if (num_registered_fb > 0)
 	{
-	MF_DEBUG("00240006");
+	//("00240006");
 		fb_blank(registered_fb[0], FB_BLANK_POWERDOWN);
-	MF_DEBUG("00240007");
+	//("00240007");
 	}
 	if (num_registered_fb > 1)
 	{
-	MF_DEBUG("00240008");
+	//("00240008");
 		fb_blank(registered_fb[1], FB_BLANK_NORMAL);
-	MF_DEBUG("00240009");
+	//("00240009");
 	}
 #ifdef CONFIG_TEGRA_CONSERVATIVE_GOV_ON_EARLY_SUPSEND
-	MF_DEBUG("00240010");
+	//("00240010");
 	cpufreq_save_default_governor();
-	MF_DEBUG("00240011");
+	//("00240011");
 	cpufreq_set_conservative_governor();
-	MF_DEBUG("00240012");
+	//("00240012");
 	cpufreq_set_conservative_governor_param("up_threshold",
 			SET_CONSERVATIVE_GOVERNOR_UP_THRESHOLD);
 
-	MF_DEBUG("00240013");
+	//("00240013");
 	cpufreq_set_conservative_governor_param("down_threshold",
 			SET_CONSERVATIVE_GOVERNOR_DOWN_THRESHOLD);
 
-	MF_DEBUG("00240014");
+	//("00240014");
 	cpufreq_set_conservative_governor_param("freq_step",
 			SET_CONSERVATIVE_GOVERNOR_FREQ_STEP);
 #endif
 
-	MF_DEBUG("00240015");
+	//("00240015");
 	DISP_INFO_OUT();
-	MF_DEBUG("00240016");
+	//("00240016");
 }
 
 
@@ -4548,7 +4548,7 @@ int __init enrc2b_panel_init(void)
 				ARRAY_SIZE(enrc2b_bl_devices));
 	INIT_WORK(&bkl_work, bkl_do_work);
 	bkl_wq = create_workqueue("bkl_wq");
-	setup_timer(&bkl_timer, bkl_update, NULL);
+	setup_timer(&bkl_timer, bkl_update, 0);
 
 	bkl_debugfs_root = debugfs_create_dir("backlight", NULL);
 

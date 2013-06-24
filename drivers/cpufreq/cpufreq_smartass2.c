@@ -341,7 +341,7 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 			new_freq = this_smartmax->ideal_speed;
 		else if (ramp_up_step) {
 			new_freq = old_freq + 51000;
-			if (new_freq > 1300000)
+			if (new_freq > 1150000)
 				new_freq = 1700000; // skip 1.4 and 1.5GHz as they are barely used.
 			relation = CPUFREQ_RELATION_H;
 		}
@@ -362,8 +362,8 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 		}
 	}
 
-	if ((new_freq < 1300000) && (boost_counter > 0) && !early_suspend_hook)
-		new_freq = 1300000;
+	if ((new_freq < 1150000) && (boost_counter > 0) && !early_suspend_hook)
+		new_freq = 1150000;
 
 	if (new_freq!=0){
 		target_freq(policy, this_smartmax, new_freq, old_freq, relation);

@@ -50,7 +50,7 @@
 #include "dvfs.h"
 #include "pm.h"
 
-extern unsigned int get_powersave_freq();
+extern unsigned int get_powersave_freq(void);
 /* Symbol to store resume resume */
 extern unsigned long long wake_reason_resume;
 static spinlock_t user_cap_lock;
@@ -2149,7 +2149,6 @@ static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
 		}
 	} else if (event == PM_POST_SUSPEND)
 	{
-		unsigned int freq;
 		mutex_lock(&tegra_cpu_lock);
 		is_suspended = false;
 		tegra_cpu_edp_init(true);
@@ -2375,7 +2374,7 @@ void release_screen_off_freq_lock(unsigned int capfreq )
 }
 EXPORT_SYMBOL_GPL(release_screen_off_freq_lock);
 
-void lock_screen_off_freq_lock()
+void lock_screen_off_freq_lock(void)
 {
     if (enter_early_suspend){
 //        perf_early_suspend = 0 ;

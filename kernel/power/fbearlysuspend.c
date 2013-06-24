@@ -109,16 +109,6 @@ static ssize_t wait_for_fb_wake_show(struct kobject *kobj,
 	return s - buf;
 }
 
-#define power_ro_attr(_name) \
-static struct kobj_attribute _name##_attr = {	\
-	.attr	= {				\
-		.name = __stringify(_name),	\
-		.mode = 0444,			\
-	},					\
-	.show	= _name##_show,			\
-	.store	= NULL,		\
-}
-
 power_ro_attr(wait_for_fb_sleep);
 power_ro_attr(wait_for_fb_wake);
 
