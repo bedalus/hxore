@@ -4,7 +4,7 @@
 mount -o remount,rw /system
 rm -f /system/lib/modules/*
 cp -fR /modules/*  /system/lib/modules
-chmod -R 0644 system/lib/modules
+chmod -R 0644 /system/lib/modules
 find /system/lib/modules -type f -name '*.ko' -exec chown 0:0 {} \;
 
 # make sure init.d is ok
@@ -13,7 +13,7 @@ chmod -R 777 /system/etc/init.d
 sync
 
 # force insert modules that are required
-insmod /system/lib/modules/bcmdhd.ko
+# insmod /system/lib/modules/bcmdhd.ko
 insmod /system/lib/modules/baseband_xmm_power2.ko
 insmod /system/lib/modules/raw_ip_net.ko
 insmod /system/lib/modules/baseband_usb_chr.ko

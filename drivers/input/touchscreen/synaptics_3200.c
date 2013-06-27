@@ -153,7 +153,7 @@ extern int get_tamper_sf(void);
 // beyond this threshold the panel will not register to apps
 static unsigned int s2w_register_threshold = 9;
 // power will toggle at this distance from start point
-static unsigned int s2w_min_distance = 325;
+static unsigned int s2w_min_distance = 370;
 // use either direction for on/off
 static bool s2w_allow_stroke = true;
 
