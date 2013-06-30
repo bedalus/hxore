@@ -698,7 +698,8 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		} else if (!is_lp_cluster() && !no_lp &&
 			   !pm_qos_request(1) &&
 			   ((now - last_change_time) >= down_delay) &&
-			   (flags & EARLYSUSPEND_ACTIVE)) {
+			   ((flags & EARLYSUSPEND_ACTIVE) || (cpusallowed == 1)) &&
+			   (cpusallowed != 5)) {
 			if(!clk_set_parent(cpu_clk, cpu_lp_clk)) {
 				CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " enter LPCPU");
 				hp_stats_update(CONFIG_NR_CPUS, true);
@@ -712,7 +713,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 			hotplug_wq, &hotplug_work, up2gn_delay);
 		break;
 	case TEGRA_HP_UP:
-		if (!(flags & EARLYSUSPEND_ACTIVE)) {
+		if ((!(flags & EARLYSUSPEND_ACTIVE) || (cpusallowed == 5)) && (cpusallowed !=1)) {
 			if (is_lp_cluster() && !no_lp) {
 				if(!clk_set_parent(cpu_clk, cpu_g_clk)) {
 					CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
@@ -769,9 +770,9 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " system is not running\n");
 	} else if (cpu < nr_cpu_ids)
 	{
-		if (up)
+		if (up && (cpusallowed > 1))
 		{
-			if ((num_online_cpus() < cpusallowed) && (!(flags & EARLYSUSPEND_ACTIVE)))
+			if ((num_online_cpus() < cpusallowed) && ((!(flags & EARLYSUSPEND_ACTIVE)) || (cpusallowed ==5)))
 			{
 				down_requests--;
 				if (down_requests == -10) // negative down = up requests! 
@@ -780,7 +781,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 					down_requests = 0;
 				}
 			}
-			if ((num_online_cpus() < 2) && (!(flags & EARLYSUSPEND_ACTIVE)))
+			if ((num_online_cpus() < 2) && ((!(flags & EARLYSUSPEND_ACTIVE)) || (cpusallowed ==5)))
 				cpu_up(cpu);
 		} else
 		{
@@ -791,7 +792,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 					cpu_down(cpu);
 				down_requests = 0;
 			}
-			if (flags & EARLYSUSPEND_ACTIVE)
+			if ((((flags & EARLYSUSPEND_ACTIVE) && (cpusallowed < 5)) || (cpusallowed == 1)) && (num_online_cpus() > 1))
 				cpu_down(cpu);
 		}
 	}
@@ -1450,7 +1451,7 @@ static ssize_t cpusallowed_status_read(struct device *dev, struct device_attribu
 {
 	int available_cpus = sprintf(buf,"%u\n", cpusallowed);
 
-	if (available_cpus > 4) available_cpus = 4;
+	if (available_cpus > 5) available_cpus = 4;
 	if (available_cpus < 1) available_cpus = 1;
 	return available_cpus;
 }
@@ -1463,6 +1464,9 @@ static ssize_t cpusallowed_status_write(struct device *dev, struct device_attrib
 		cpusallowed = data;
 	else
 		pr_info("%s: input error\n", __FUNCTION__);
+
+	if (cpusallowed > 5) cpusallowed = 4;
+	if (cpusallowed < 1) cpusallowed = 1;
 
 	return size;
 }
