@@ -99,10 +99,10 @@ static unsigned int down_rate;
 static unsigned int sampling_rate;
 
 /* Consider IO as busy */
-#define DEFAULT_IO_IS_BUSY 1
+#define DEFAULT_IO_IS_BUSY 0
 static unsigned int io_is_busy;
 
-#define DEFAULT_IGNORE_NICE 0
+#define DEFAULT_IGNORE_NICE 1
 static unsigned int ignore_nice;
 
 /*************** End of tunables ***************/
@@ -341,8 +341,12 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 			new_freq = this_smartmax->ideal_speed;
 		else if (ramp_up_step) {
 			new_freq = old_freq + 51000;
-			if (new_freq > DEFAULT_IDEAL_FREQ)
-				new_freq = policy->max; // skip 1.4 and 1.5GHz as they are barely used.
+			if (new_freq > DEFAULT_IDEAL_FREQ) {
+				if (cpusallowed != 1)
+					new_freq = policy->max;
+					// skip 1.4/1.5GHz as they are barely used.
+				else 	new_freq = DEFAULT_IDEAL_FREQ;
+			}
 			relation = CPUFREQ_RELATION_H;
 		}
 	} else if (ramp_dir < 0) {
@@ -388,6 +392,8 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 		max_load_adjust = max_cpu_load;
 		min_load_adjust = min_cpu_load;
 	}
+	if (cpusallowed == 1)
+		max_load_adjust = 99;
 
 	if (debug_load > max_load_adjust && cur < policy->max
 			&& (cur < this_smartmax->ideal_speed
