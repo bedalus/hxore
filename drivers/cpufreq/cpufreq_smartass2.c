@@ -50,52 +50,50 @@ static int boost_counter = 0;
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
 #define DEFAULT_IDEAL_FREQ 1300000 // this seems to be the lowest fq at which everything is smooth enough
-static unsigned int ideal_freq;
+static unsigned int ideal_freq = DEFAULT_IDEAL_FREQ;
 
 /*
  * Freqeuncy delta when ramping up above the ideal freqeuncy.
  * Zero disables and causes to always jump straight to max frequency.
  * When below the ideal freqeuncy we always ramp up to the ideal freq.
  */
-#define DEFAULT_RAMP_UP_STEP 51000
+#define DEFAULT_RAMP_UP_STEP 400000
 static unsigned int ramp_up_step;
 
 /*
- * Freqeuncy delta when ramping down below the ideal freqeuncy.
- * Zero disables and will calculate ramp down according to load heuristic.
- * When above the ideal freqeuncy we always ramp down to the ideal freq.
+ * Freqeuncy delta when ramping down below the ideal freqeuncy. 0 not allowed
  */        
-#define DEFAULT_RAMP_DOWN_STEP 51000
+#define DEFAULT_RAMP_DOWN_STEP 390000
 static unsigned int ramp_down_step;
 
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 80
+#define DEFAULT_MAX_CPU_LOAD 95
 static unsigned int max_cpu_load;
 
 /*
  * CPU freq will be decreased if measured load < min_cpu_load;
  */
-#define DEFAULT_MIN_CPU_LOAD 23 // 45
+#define DEFAULT_MIN_CPU_LOAD 35
 static unsigned int min_cpu_load;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp up.
  * Notice we ignore this when we are below the ideal frequency.
  */
-#define DEFAULT_UP_RATE 80000
+#define DEFAULT_UP_RATE 30000
 static unsigned int up_rate;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  * Notice we ignore this when we are above the ideal frequency.
  */
-#define DEFAULT_DOWN_RATE 40000
+#define DEFAULT_DOWN_RATE 90000
 static unsigned int down_rate;
 
 /* in nsecs */
-#define DEFAULT_SAMPLING_RATE 40000
+#define DEFAULT_SAMPLING_RATE 30000
 static unsigned int sampling_rate;
 
 /* Consider IO as busy */
@@ -340,30 +338,15 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 		if (old_freq < this_smartmax->ideal_speed)
 			new_freq = this_smartmax->ideal_speed;
 		else if (ramp_up_step) {
-			new_freq = old_freq + 51000;
-			if (new_freq > DEFAULT_IDEAL_FREQ) {
-				if (cpusallowed != 1)
-					new_freq = policy->max;
-					// skip 1.4/1.5GHz as they are barely used.
-				else 	new_freq = DEFAULT_IDEAL_FREQ;
-			}
+			new_freq = old_freq + ramp_up_step;
 			relation = CPUFREQ_RELATION_H;
 		}
 	} else if (ramp_dir < 0) {
 		// ramp down logic:
-		if (old_freq > this_smartmax->ideal_speed) {
+		if (old_freq > this_smartmax->ideal_speed)
 			new_freq = this_smartmax->ideal_speed;
-			relation = CPUFREQ_RELATION_H;
-		} else if (ramp_down_step)
+		else
 			new_freq = old_freq - ramp_down_step;
-		else {
-			// Load heuristics: Adjust new_freq such that, assuming a linear
-			// scaling of load vs. frequency, the load in the new frequency
-			// will be max_cpu_load:
-			new_freq = old_freq * this_smartmax->cur_cpu_load / max_cpu_load;
-			if (new_freq > old_freq) // min_cpu_load > max_cpu_load ?!
-				new_freq = old_freq - 1;
-		}
 	}
 
 	if ((new_freq < DEFAULT_IDEAL_FREQ) && (boost_counter > 0) && !early_suspend_hook)
@@ -383,17 +366,13 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 	// for at least up_rate:
 	int min_load_adjust, max_load_adjust;
 
-	if (early_suspend_hook)
-	{
-		max_load_adjust = 85;
-		min_load_adjust = 35;
-	} else
-	{
-		max_load_adjust = max_cpu_load;
-		min_load_adjust = min_cpu_load;
-	}
-	if (cpusallowed == 1)
-		max_load_adjust = 99;
+/*	if (early_suspend_hook)
+		min_load_adjust = 45;
+	else
+		{*/
+			max_load_adjust = max_cpu_load;
+			min_load_adjust = min_cpu_load;
+		
 
 	if (debug_load > max_load_adjust && cur < policy->max
 			&& (cur < this_smartmax->ideal_speed
@@ -489,7 +468,7 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 
 	if (early_suspend_hook) 
 	{
-		ideal_freq = 51000;
+		ideal_freq = 102000;
 		boost_counter = 0;
 	}
 	else

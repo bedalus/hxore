@@ -773,18 +773,19 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		{
 			if (num_online_cpus() < cpusallowed)
 			{
-				down_requests--;
+				if (down_requests-- > 0) down_requests = 0;
 				if (down_requests == -10)
 				{
 					cpu_up(cpu);  // negative down_requests = up requests! 
 					down_requests = 0;
 				}
 			}
-			if ((num_online_cpus() < 2) && ((!(flags & EARLYSUSPEND_ACTIVE)) || (cpusallowed ==5)))
+			if ((num_online_cpus() < 2) && !(flags & EARLYSUSPEND_ACTIVE))
 				cpu_up(cpu);
 		} else
 		{
-			if (down_requests++ == 3)
+			if (down_requests++ < 0) down_requests = 0;
+			if (down_requests == 3)
 			{
 				if (num_online_cpus() > 2)
 					cpu_down(cpu);
