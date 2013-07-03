@@ -915,7 +915,7 @@ void bthp_auto_hotplug_work_func (
         if (!is_plugging ||
 
             /* LP -> G, take NV's original design */
-            is_lp_cluster () ||
+            is_lp_cluster() ||
 
             /* SHOULD NOT have happene!! */
             !bthp_wq_params.ref_speeds.prev_loc ||
