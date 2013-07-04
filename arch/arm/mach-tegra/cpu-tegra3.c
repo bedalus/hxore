@@ -774,7 +774,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		{
 			if ((num_online_cpus() < cpusallowed) && ((!(flags & EARLYSUSPEND_ACTIVE)) || (cpusallowed ==5)))
 			{
-				down_requests--;
+				if (down_requests-- > 0) down_requests = 0;
 				if (down_requests == -10) // negative down = up requests! 
 				{
 					cpu_up(cpu);
@@ -785,7 +785,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 				cpu_up(cpu);
 		} else
 		{
-			down_requests++;
+			if (down_requests++ < 0) down_requests = 0;
 			if (down_requests == 3) // it takes n requests to bring a core down
 			{
 				if (num_online_cpus() > 2)
