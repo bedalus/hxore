@@ -403,7 +403,7 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 
 	if (early_suspend_hook)
 	{
-		max_load_adjust = 85;
+		max_load_adjust = 75;
 		min_load_adjust = 25;
 	} else
 	{
@@ -505,7 +505,7 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 
 	if (early_suspend_hook) 
 	{
-		ideal_freq = 110000;
+		ideal_freq = 220000;
 		boost_counter = 0;
 	}
 	else

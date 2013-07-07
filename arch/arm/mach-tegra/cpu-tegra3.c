@@ -50,10 +50,6 @@
 #define UP2Gn_DELAY_MS		100
 #define DOWN_DELAY_MS		2000
 
-/* Control flags */
-unsigned char flags;
-#define EARLYSUSPEND_ACTIVE	(1 << 3)
-
 int cpusallowed = 3; //setting to 3 to keep heat down during boot
 bool camera_hook = false;
 bool early_suspend_hook = false; // does cpu_tegra3 tell us that we are early suspended?
@@ -698,7 +694,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		} else if (!is_lp_cluster() && !no_lp &&
 			   !pm_qos_request(1) &&
 			   ((now - last_change_time) >= down_delay) &&
-			   ((flags & EARLYSUSPEND_ACTIVE) || (cpusallowed == 1)) &&
+			   (early_suspend_hook) &&
 			   (cpusallowed != 5)) {
 			if(!clk_set_parent(cpu_clk, cpu_lp_clk)) {
 				CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " enter LPCPU");
@@ -713,7 +709,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 			hotplug_wq, &hotplug_work, up2gn_delay);
 		break;
 	case TEGRA_HP_UP:
-		if ((!(flags & EARLYSUSPEND_ACTIVE) || (cpusallowed == 5)) && (cpusallowed !=1)) {
+		if (!early_suspend_hook || (cpusallowed == 5)) {
 			if (is_lp_cluster() && !no_lp) {
 				if(!clk_set_parent(cpu_clk, cpu_g_clk)) {
 					CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
@@ -770,9 +766,9 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 		CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " system is not running\n");
 	} else if (cpu < nr_cpu_ids)
 	{
-		if (up && (cpusallowed > 1))
+		if (up)
 		{
-			if ((num_online_cpus() < cpusallowed) && ((!(flags & EARLYSUSPEND_ACTIVE)) || (cpusallowed ==5)))
+			if ((num_online_cpus() < cpusallowed) && !early_suspend_hook)
 			{
 				if (down_requests-- > 0) down_requests = 0;
 				if (down_requests == -10) // negative down = up requests! 
@@ -780,8 +776,8 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 					cpu_up(cpu);
 					down_requests = 0;
 				}
-			}
-			if ((num_online_cpus() < 2) && ((!(flags & EARLYSUSPEND_ACTIVE)) || (cpusallowed ==5)))
+			} else
+			if (((num_online_cpus() < 2) && !early_suspend_hook) || (cpusallowed == 5))
 				cpu_up(cpu);
 		} else
 		{
@@ -792,7 +788,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 					cpu_down(cpu);
 				down_requests = 0;
 			}
-			if ((((flags & EARLYSUSPEND_ACTIVE) && (cpusallowed < 5)) || (cpusallowed == 1)) && (num_online_cpus() > 1))
+			if (early_suspend_hook && (cpusallowed != 5))
 				cpu_down(cpu);
 		}
 	}
@@ -1107,26 +1103,27 @@ EXPORT_SYMBOL (bthp_cpu_num_catchup);
 
 static int min_cpus_notify(struct notifier_block *nb, unsigned long n, void *p)
 {
-	mutex_lock(tegra3_cpu_lock);
+	if (!early_suspend_hook) {
+		mutex_lock(tegra3_cpu_lock);
+		if ((n >= 1) && is_lp_cluster()) {
+			/* make sure cpu rate is within g-mode range before switching */
+			unsigned int speed = max((unsigned long)tegra_getspeed(0),
+				clk_get_min_rate(cpu_g_clk) / 1000);
+			tegra_update_cpu_speed(speed);
 
-	if ((n >= 1) && is_lp_cluster()) {
-		/* make sure cpu rate is within g-mode range before switching */
-		unsigned int speed = max((unsigned long)tegra_getspeed(0),
-			clk_get_min_rate(cpu_g_clk) / 1000);
-		tegra_update_cpu_speed(speed);
 
-		if (!(flags & EARLYSUSPEND_ACTIVE))
-			if (!clk_set_parent(cpu_clk, cpu_g_clk)) {
-				CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
-						 " leave LPCPU (%s)", __func__);
-				last_change_time = jiffies;
-				hp_stats_update(CONFIG_NR_CPUS, false);
-				hp_stats_update(0, true);
-			}
+				if (!clk_set_parent(cpu_clk, cpu_g_clk)) {
+					CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
+							 " leave LPCPU (%s)", __func__);
+					last_change_time = jiffies;
+					hp_stats_update(CONFIG_NR_CPUS, false);
+					hp_stats_update(0, true);
+				}
+		}
+		/* update governor state machine */
+		tegra_cpu_set_speed_cap(NULL);
+		mutex_unlock(tegra3_cpu_lock);
 	}
-	/* update governor state machine */
-	tegra_cpu_set_speed_cap(NULL);
-	mutex_unlock(tegra3_cpu_lock);
 	return NOTIFY_OK;
 }
 
@@ -1148,7 +1145,7 @@ void tegra_auto_hotplug_governor(unsigned int cpu_freq, bool suspend)
 		hp_state = TEGRA_HP_IDLE;
 
 		/* Switch to G-mode if suspend rate is high enough */	
-		if (!(flags & EARLYSUSPEND_ACTIVE))
+		if (!early_suspend_hook)
 			if (is_lp_cluster() && (cpu_freq >= idle_bottom_freq)) {
 				if (!clk_set_parent(cpu_clk, cpu_g_clk)) {
 					CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
@@ -1490,15 +1487,11 @@ static struct miscdevice cpusallowed_device = {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void auto_hotplug_early_suspend(struct early_suspend *handler)
 {
-	pr_info("auto_hotplug: early suspend handler\n");
-	flags |= EARLYSUSPEND_ACTIVE;
 	early_suspend_hook = true;
 }
 
 static void auto_hotplug_late_resume(struct early_suspend *handler)
 {
-	pr_info("auto_hotplug: late resume handler\n");
-	flags &= ~EARLYSUSPEND_ACTIVE;
 	early_suspend_hook = false;
 }
 

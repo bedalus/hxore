@@ -41,7 +41,6 @@
 #include "tegra_pcm.h"
 
 #define DRV_NAME "tegra-pcm-audio"
-#define INT_DURATION_THRESHOLD 32
 
 static const struct snd_pcm_hardware tegra_pcm_hardware = {
 	.info			= SNDRV_PCM_INFO_MMAP |
@@ -50,14 +49,14 @@ static const struct snd_pcm_hardware tegra_pcm_hardware = {
 				  SNDRV_PCM_INFO_RESUME |
 				  SNDRV_PCM_INFO_INTERLEAVED,
 	.formats		= SNDRV_PCM_FMTBIT_S16_LE,
-	.channels_min		= 1,
+	.channels_min		= 2,
 	.channels_max		= 2,
-	.period_bytes_min	= 128,
+	.period_bytes_min	= 2048,
 	.period_bytes_max	= PAGE_SIZE * 2,
-	.periods_min		= 1,
+	.periods_min		= 4,
 	.periods_max		= 8,
 	.buffer_bytes_max	= PAGE_SIZE * 8,
-	.fifo_size		= 4,
+	.fifo_size		= 8,
 };
 
 static void tegra_pcm_queue_dma(struct tegra_runtime_data *prtd)
@@ -91,9 +90,6 @@ static void dma_complete_callback(struct tegra_dma_req *req)
 	struct snd_pcm_substream *substream = prtd->substream;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	static int64_t IRQT1,T2;
-	IRQT1 = ktime_to_ms(ktime_get());
-
 	spin_lock(&prtd->lock);
 
 	if (!prtd->running) {
@@ -107,13 +103,6 @@ static void dma_complete_callback(struct tegra_dma_req *req)
 	tegra_pcm_queue_dma(prtd);
 
 	spin_unlock(&prtd->lock);
-	T2 = IRQT1 - oldT1;
-	if (T2 > INT_DURATION_THRESHOLD)
-	{
-		TimeOutCounter++;
-		printk(KERN_INFO "[AUD] Dur = %llu, CNT = %llu", T2, TimeOutCounter);
-	}
-	oldT1 = IRQT1;
 
 	snd_pcm_period_elapsed(substream);
 }
