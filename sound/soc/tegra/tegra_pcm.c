@@ -51,12 +51,12 @@ static const struct snd_pcm_hardware tegra_pcm_hardware = {
 	.formats		= SNDRV_PCM_FMTBIT_S16_LE,
 	.channels_min		= 2,
 	.channels_max		= 2,
-	.period_bytes_min	= 2048,
-	.period_bytes_max	= PAGE_SIZE * 2,
+	.period_bytes_min	= PAGE_SIZE,
+	.period_bytes_max	= PAGE_SIZE,
 	.periods_min		= 4,
-	.periods_max		= 8,
-	.buffer_bytes_max	= PAGE_SIZE * 8,
-	.fifo_size		= 8,
+	.periods_max		= 4,
+	.buffer_bytes_max	= PAGE_SIZE * 4,
+	.fifo_size		= 0,
 };
 
 static void tegra_pcm_queue_dma(struct tegra_runtime_data *prtd)
