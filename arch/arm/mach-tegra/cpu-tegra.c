@@ -2153,9 +2153,9 @@ static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
 		is_suspended = false;
 		tegra_cpu_edp_init(true);
 		//if (wake_reason_resume == 0x80) {   ----- DON'T NEED ANY OF THIS!
-		//	tegra_update_cpu_speed(BOOST_CPU_FREQ_MIN);
-		//	tegra_auto_hotplug_governor(
-		//		BOOST_CPU_FREQ_MIN, false); 
+			tegra_update_cpu_speed(BOOST_CPU_FREQ_MIN);
+			tegra_auto_hotplug_governor(
+				BOOST_CPU_FREQ_MIN, false); 
 		//} else {
 		//	tegra_cpu_set_speed_cap(&freq);
 		//}

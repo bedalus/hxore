@@ -99,7 +99,7 @@ static unsigned int down_rate;
 static unsigned int sampling_rate;
 
 /* Consider IO as busy */
-#define DEFAULT_IO_IS_BUSY 0
+#define DEFAULT_IO_IS_BUSY 1
 static unsigned int io_is_busy;
 
 #define DEFAULT_IGNORE_NICE 1
@@ -401,14 +401,18 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 	// for at least up_rate:
 	int min_load_adjust, max_load_adjust;
 
-	if (early_suspend_hook)
+	if (early_suspend_hook) //set other defaults for governor while in early_suspend
 	{
-		max_load_adjust = 75;
-		min_load_adjust = 25;
+		max_load_adjust = 65;
+		min_load_adjust = 15;
+		ramp_down_step = 436000;
+		up_rate = 30000;
 	} else
 	{
 		max_load_adjust = max_cpu_load;
 		min_load_adjust = min_cpu_load;
+		ramp_down_step = DEFAULT_RAMP_DOWN_STEP;
+		up_rate = DEFAULT_UP_RATE;
 	}
 
 	if (debug_load > max_load_adjust && cur < policy->max
@@ -505,7 +509,7 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 
 	if (early_suspend_hook) 
 	{
-		ideal_freq = 220000;
+		ideal_freq = 640000;
 		boost_counter = 0;
 	}
 	else
