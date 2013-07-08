@@ -681,6 +681,9 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 	unsigned int cpu = nr_cpu_ids;
 	unsigned long now = jiffies;
 
+	if (early_suspend_hook) hp_state = TEGRA_HP_DOWN;
+	if (early_suspend_hook && is_lp_cluster()) hp_state = TEGRA_HP_DISABLED;
+
 	mutex_lock(tegra3_cpu_lock);
 
 	switch (hp_state) {
@@ -693,9 +696,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 			up = false;
 		} else if (!is_lp_cluster() && !no_lp &&
 			   !pm_qos_request(1) &&
-			   ((now - last_change_time) >= down_delay) &&
-			   (early_suspend_hook) &&
-			   (cpusallowed != 5)) {
+			   ((now - last_change_time) >= down_delay)) {
 			if(!clk_set_parent(cpu_clk, cpu_lp_clk)) {
 				CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG, " enter LPCPU");
 				hp_stats_update(CONFIG_NR_CPUS, true);
@@ -709,7 +710,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 			hotplug_wq, &hotplug_work, up2gn_delay);
 		break;
 	case TEGRA_HP_UP:
-		if (!early_suspend_hook || (cpusallowed == 5)) {
+		if (1) {
 			if (is_lp_cluster() && !no_lp) {
 				if(!clk_set_parent(cpu_clk, cpu_g_clk)) {
 					CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
@@ -768,7 +769,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 	{
 		if (up)
 		{
-			if ((num_online_cpus() < cpusallowed) && !early_suspend_hook)
+			if (num_online_cpus() < cpusallowed)
 			{
 				if (down_requests-- > 0) down_requests = 0;
 				if (down_requests == -10) // negative down = up requests! 
@@ -777,7 +778,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 					down_requests = 0;
 				}
 			} else
-			if (((num_online_cpus() < 2) && !early_suspend_hook) || (cpusallowed == 5))
+			if (num_online_cpus() < 2)
 				cpu_up(cpu);
 		} else
 		{
@@ -788,7 +789,7 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 					cpu_down(cpu);
 				down_requests = 0;
 			}
-			if (early_suspend_hook && (cpusallowed != 5))
+			if (early_suspend_hook)
 				cpu_down(cpu);
 		}
 	}
@@ -1448,8 +1449,8 @@ static ssize_t cpusallowed_status_read(struct device *dev, struct device_attribu
 {
 	int available_cpus = sprintf(buf,"%u\n", cpusallowed);
 
-	if (available_cpus > 5) available_cpus = 4;
-	if (available_cpus < 1) available_cpus = 1;
+	if (available_cpus > 4) available_cpus = 4;
+	if (available_cpus < 2) available_cpus = 2;
 	return available_cpus;
 }
 
@@ -1462,8 +1463,8 @@ static ssize_t cpusallowed_status_write(struct device *dev, struct device_attrib
 	else
 		pr_info("%s: input error\n", __FUNCTION__);
 
-	if (cpusallowed > 5) cpusallowed = 4;
-	if (cpusallowed < 1) cpusallowed = 1;
+	if (cpusallowed > 4) cpusallowed = 4;
+	if (cpusallowed < 2) cpusallowed = 2;
 
 	return size;
 }
@@ -1493,6 +1494,7 @@ static void auto_hotplug_early_suspend(struct early_suspend *handler)
 static void auto_hotplug_late_resume(struct early_suspend *handler)
 {
 	early_suspend_hook = false;
+	hp_state = TEGRA_HP_UP;
 }
 
 static struct early_suspend auto_hotplug_suspend = {
