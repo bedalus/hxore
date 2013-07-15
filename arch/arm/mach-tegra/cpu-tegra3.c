@@ -681,8 +681,8 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 	unsigned int cpu = nr_cpu_ids;
 	unsigned long now = jiffies;
 
-	if (early_suspend_hook) hp_state = TEGRA_HP_DOWN;
-	if (early_suspend_hook && is_lp_cluster()) hp_state = TEGRA_HP_DISABLED;
+	//if (early_suspend_hook) hp_state = TEGRA_HP_DOWN;
+	//if (early_suspend_hook && is_lp_cluster()) hp_state = TEGRA_HP_DISABLED;
 
 	mutex_lock(tegra3_cpu_lock);
 
@@ -772,13 +772,13 @@ static void tegra_auto_hotplug_work_func(struct work_struct *work)
 			if (num_online_cpus() < cpusallowed)
 			{
 				if (down_requests-- > 0) down_requests = 0;
-				if (down_requests == -10) // negative down = up requests! 
+				if (down_requests == -10 || early_suspend_hook) // negative down = up requests! 
 				{
 					cpu_up(cpu);
 					down_requests = 0;
 				}
 			} else
-			if (num_online_cpus() < 2)
+			if ((num_online_cpus() < 2) && !early_suspend_hook)
 				cpu_up(cpu);
 		} else
 		{
@@ -1104,7 +1104,7 @@ EXPORT_SYMBOL (bthp_cpu_num_catchup);
 
 static int min_cpus_notify(struct notifier_block *nb, unsigned long n, void *p)
 {
-	if (!early_suspend_hook) {
+	//if (!early_suspend_hook) {
 		mutex_lock(tegra3_cpu_lock);
 		if ((n >= 1) && is_lp_cluster()) {
 			/* make sure cpu rate is within g-mode range before switching */
@@ -1124,7 +1124,7 @@ static int min_cpus_notify(struct notifier_block *nb, unsigned long n, void *p)
 		/* update governor state machine */
 		tegra_cpu_set_speed_cap(NULL);
 		mutex_unlock(tegra3_cpu_lock);
-	}
+	//}
 	return NOTIFY_OK;
 }
 
@@ -1146,7 +1146,7 @@ void tegra_auto_hotplug_governor(unsigned int cpu_freq, bool suspend)
 		hp_state = TEGRA_HP_IDLE;
 
 		/* Switch to G-mode if suspend rate is high enough */	
-		if (!early_suspend_hook)
+		//if (!early_suspend_hook)
 			if (is_lp_cluster() && (cpu_freq >= idle_bottom_freq)) {
 				if (!clk_set_parent(cpu_clk, cpu_g_clk)) {
 					CPU_DEBUG_PRINTK(CPU_DEBUG_HOTPLUG,
