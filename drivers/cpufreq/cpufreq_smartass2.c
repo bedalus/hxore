@@ -71,7 +71,7 @@ static unsigned int ramp_down_step;
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 95
+#define DEFAULT_MAX_CPU_LOAD 97
 static unsigned int max_cpu_load;
 
 /*
@@ -319,21 +319,6 @@ inline static void target_freq(struct cpufreq_policy *policy,
 	} else
 		target = new_freq;
 
-	/*mutex_lock(&set_speed_lock); bedalus
-
-	// only if all cpus get the target they will really scale down
-	// cause the highest defines the speed for all
-	for_each_online_cpu(j)
-	{
-		struct smartmax_info_s *j_this_smartmax = &per_cpu(smartmax_info, j);
-
-		if (j_this_smartmax->enable) {
-			struct cpufreq_policy *j_policy = j_this_smartmax->cur_policy;
-
-			__cpufreq_driver_target(j_policy, target, prefered_relation);
-		}
-	}
-	mutex_unlock(&set_speed_lock);*/
 		__cpufreq_driver_target(policy, target, prefered_relation);
 
 	// remember last time we changed frequency
@@ -365,7 +350,7 @@ static void cpufreq_smartmax_freq_change(struct smartmax_info_s *this_smartmax) 
 			new_freq = old_freq + ramp_up_step;
 			relation = CPUFREQ_RELATION_H;
 			if (new_freq > DEFAULT_IDEAL_FREQ)
-				new_freq = policy->max; // skip 1.4 and 1.5GHz as they are barely used.
+			new_freq = policy->max; // skip 1.4 and 1.5GHz as they are barely used.
 		}
 	} else if (ramp_dir < 0) {
 		// ramp down logic:
