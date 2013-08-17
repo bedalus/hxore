@@ -31,6 +31,7 @@
 #include <asm/cpu.h>
 #include <asm/cputype.h>
 #include <asm/exception.h>
+#include <asm/idmap.h>
 #include <asm/topology.h>
 #include <asm/mmu_context.h>
 #include <asm/pgtable.h>
@@ -40,8 +41,7 @@
 #include <asm/tlbflush.h>
 #include <asm/ptrace.h>
 #include <asm/localtimer.h>
-
-#include <mach/mfootprint.h>
+#include <asm/smp_plat.h>
 
 /*
  * as from 2.5, kernels no longer have an init_tasks structure
@@ -65,10 +65,8 @@ int __cpuinit __cpu_up(unsigned int cpu)
 {
 	struct cpuinfo_arm *ci = &per_cpu(cpu_data, cpu);
 	struct task_struct *idle = ci->idle;
-	pgd_t *pgd;
 	int ret;
 
-	//MF_DEBUG("00UP0008");
 	/*
 	 * Spawn a new process manually, if not already done.
 	 * Grab a pointer to its task struct so we can mess with it
@@ -76,6 +74,7 @@ int __cpuinit __cpu_up(unsigned int cpu)
 	if (!idle) {
 		idle = fork_idle(cpu);
 		if (IS_ERR(idle)) {
+			printk(KERN_ERR "CPU%u: fork() failed\n", cpu);
 			return PTR_ERR(idle);
 		}
 		ci->idle = idle;
@@ -87,37 +86,16 @@ int __cpuinit __cpu_up(unsigned int cpu)
 		init_idle(idle, cpu);
 	}
 
-	//MF_DEBUG("00UP0009");
-	/*
-	 * Allocate initial page tables to allow the new CPU to
-	 * enable the MMU safely.  This essentially means a set
-	 * of our "standard" page tables, with the addition of
-	 * a 1:1 mapping for the physical address of the kernel.
-	 */
-	pgd = pgd_alloc(&init_mm);
-	if (!pgd)
-		return -ENOMEM;
-
-	if (PHYS_OFFSET != PAGE_OFFSET) {
-#ifndef CONFIG_HOTPLUG_CPU
-		identity_mapping_add(pgd, __pa(__init_begin), __pa(__init_end));
-#endif
-		identity_mapping_add(pgd, __pa(_stext), __pa(_etext));
-		identity_mapping_add(pgd, __pa(_sdata), __pa(_edata));
-	}
-
-	//MF_DEBUG("00UP0009");
 	/*
 	 * We need to tell the secondary core where to find
 	 * its stack and the page tables.
 	 */
 	secondary_data.stack = task_stack_page(idle) + THREAD_START_SP;
-	secondary_data.pgdir = virt_to_phys(pgd);
+	secondary_data.pgdir = virt_to_phys(idmap_pgd);
 	secondary_data.swapper_pg_dir = virt_to_phys(swapper_pg_dir);
 	__cpuc_flush_dcache_area(&secondary_data, sizeof(secondary_data));
 	outer_clean_range(__pa(&secondary_data), __pa(&secondary_data + 1));
 
-	//MF_DEBUG("00UP0010");
 	/*
 	 * Now bring the CPU into our world.
 	 */
@@ -138,22 +116,9 @@ int __cpuinit __cpu_up(unsigned int cpu)
 		pr_err("CPU%u: failed to boot: %d\n", cpu, ret);
 	}
 
-	//MF_DEBUG("00UP0021");
 	secondary_data.stack = NULL;
 	secondary_data.pgdir = 0;
 
-	if (PHYS_OFFSET != PAGE_OFFSET) {
-#ifndef CONFIG_HOTPLUG_CPU
-		identity_mapping_del(pgd, __pa(__init_begin), __pa(__init_end));
-#endif
-		identity_mapping_del(pgd, __pa(_stext), __pa(_etext));
-		identity_mapping_del(pgd, __pa(_sdata), __pa(_edata));
-	}
-
-	//MF_DEBUG("00UP0022");
-	pgd_free(&init_mm, pgd);
-
-	//MF_DEBUG("00UP0023");
 	return ret;
 }
 
@@ -276,6 +241,8 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
 	store_cpu_topology(cpuid);
 }
 
+static void percpu_timer_setup(void);
+
 /*
  * This is the secondary CPU boot entry.  We're using this CPUs
  * idle thread stack, but a set of temporary page tables.
@@ -302,7 +269,7 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	current->active_mm = mm;
 	cpumask_set_cpu(cpu, mm_cpumask(mm));
 
-	//printk("CPU%u: Booted secondary processor\n", cpu);
+	printk("CPU%u: Booted secondary processor\n", cpu);
 
 	cpu_init();
 	preempt_disable();
@@ -326,7 +293,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	 */
 	set_cpu_online(cpu, true);
 	complete(&cpu_running);
-//	printk("CPU%u: Booted secondary processor\n", cpu);
 
 	/*
 	 * Setup the percpu timer for this CPU.
@@ -350,6 +316,11 @@ void __init smp_cpus_done(unsigned int max_cpus)
 	for_each_online_cpu(cpu)
 		bogosum += per_cpu(cpu_data, cpu).loops_per_jiffy;
 
+	printk(KERN_INFO "SMP: Total of %d processors activated "
+	       "(%lu.%02lu BogoMIPS).\n",
+	       num_online_cpus(),
+	       bogosum / (500000/HZ),
+	       (bogosum / (5000/HZ)) % 100);
 }
 
 void __init smp_prepare_boot_cpu(void)
@@ -445,10 +416,6 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
 	for (i = 0; i < NR_IPI; i++)
 		sum += __get_irq_stat(cpu, ipi_irqs[i]);
 
-#ifdef CONFIG_LOCAL_TIMERS
-	sum += __get_irq_stat(cpu, local_timer_irqs);
-#endif
-
 	return sum;
 }
 
@@ -460,42 +427,8 @@ static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
 static void ipi_timer(void)
 {
 	struct clock_event_device *evt = &__get_cpu_var(percpu_clockevent);
-	irq_enter();
 	evt->event_handler(evt);
-	irq_exit();
 }
-
-#ifdef CONFIG_LOCAL_TIMERS
-asmlinkage void __exception_irq_entry do_local_timer(struct pt_regs *regs)
-{
-	handle_local_timer(regs);
-}
-
-void handle_local_timer(struct pt_regs *regs)
-{
-	struct pt_regs *old_regs = set_irq_regs(regs);
-	int cpu = smp_processor_id();
-
-	if (local_timer_ack()) {
-		__inc_irq_stat(cpu, local_timer_irqs);
-		ipi_timer();
-	}
-
-	set_irq_regs(old_regs);
-}
-
-void show_local_irqs(struct seq_file *p, int prec)
-{
-	unsigned int cpu;
-
-	seq_printf(p, "%*s: ", prec, "LOC");
-
-	for_each_present_cpu(cpu)
-		seq_printf(p, "%10u ", __get_irq_stat(cpu, local_timer_irqs));
-
-	seq_printf(p, " Local timer interrupts\n");
-}
-#endif
 
 #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
 static void smp_timer_broadcast(const struct cpumask *mask)
@@ -524,7 +457,20 @@ static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
 	clockevents_register_device(evt);
 }
 
-void __cpuinit percpu_timer_setup(void)
+static struct local_timer_ops *lt_ops;
+
+#ifdef CONFIG_LOCAL_TIMERS
+int local_timer_register(struct local_timer_ops *ops)
+{
+	if (lt_ops)
+		return -EBUSY;
+
+	lt_ops = ops;
+	return 0;
+}
+#endif
+
+static void __cpuinit percpu_timer_setup(void)
 {
 	unsigned int cpu = smp_processor_id();
 	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
@@ -532,7 +478,7 @@ void __cpuinit percpu_timer_setup(void)
 	evt->cpumask = cpumask_of(cpu);
 	evt->broadcast = smp_timer_broadcast;
 
-	if (local_timer_setup(evt))
+	if (!lt_ops || lt_ops->setup(evt))
 		broadcast_timer_setup(evt);
 }
 
@@ -547,7 +493,8 @@ static void percpu_timer_stop(void)
 	unsigned int cpu = smp_processor_id();
 	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
 
-	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+	if (lt_ops)
+		lt_ops->stop(evt);
 }
 #endif
 
@@ -645,7 +592,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 
 	switch (ipinr) {
 	case IPI_TIMER:
+		irq_enter();
 		ipi_timer();
+		irq_exit();
 		break;
 
 	case IPI_RESCHEDULE:
